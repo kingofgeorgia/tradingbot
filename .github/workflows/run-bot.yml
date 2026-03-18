@@ -1,0 +1,71 @@
+name: Run Bot Once
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_mode:
+        description: Binance environment for this run
+        required: true
+        default: demo
+        type: choice
+        options:
+          - demo
+          - live
+      symbols:
+        description: Comma-separated symbols to trade during this run
+        required: true
+        default: BTCUSDT,ETHUSDT
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  run-once:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_MODE: ${{ inputs.app_mode }}
+      BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
+      BINANCE_SECRET_KEY: ${{ secrets.BINANCE_SECRET_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      SYMBOLS: ${{ inputs.symbols }}
+      RUN_ONCE: 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Validate required secrets
+        run: |
+          python - <<'PY'
+          import os
+
+          required = ["BINANCE_API_KEY", "BINANCE_SECRET_KEY"]
+          missing = [name for name in required if not os.getenv(name)]
+          if missing:
+              raise SystemExit(f"Missing GitHub Actions secrets: {', '.join(missing)}")
+          print("Required secrets are present.")
+          PY
+
+      - name: Run bot once
+        run: python main.py
+
+      - name: Upload runtime artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bot-runtime-artifacts
+          path: |
+            logs/
+            data/
+          if-no-files-found: ignore
+          retention-days: 7

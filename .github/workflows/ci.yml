@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      BINANCE_API_KEY: ci_dummy_key
+      BINANCE_SECRET_KEY: ci_dummy_secret
+      PYTHONPATH: src
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Compile sources
+        run: python -m compileall main.py src tests
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Validate config loading
+        run: |
+          python - <<'PY'
+          from binance_bot.config import load_settings
+
+          settings = load_settings()
+          assert settings.app_mode == "demo"
+          assert settings.symbols == ["BTCUSDT", "ETHUSDT"]
+          assert settings.timeframe == "15m"
+          print("Configuration smoke check passed.")
+          PY

@@ -1,7 +1,16 @@
 .env
+.env.*
+!.env.example
+.venv/
+venv/
 __pycache__/
 *.pyc
 .pytest_cache/
-logs/*.log
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.vscode/
+logs/
 data/state.json
 data/*.csv
