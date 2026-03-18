@@ -11,7 +11,7 @@ from binance_bot.core.state import StateStore
 from binance_bot.notify.telegram import TelegramNotifier
 from binance_bot.orders.manager import OrderManager
 from binance_bot.risk.manager import RiskManager
-from binance_bot.strategy.ema_cross import EmaCrossStrategy, TradeSignal
+from binance_bot.strategy.ema_cross import EmaCrossStrategy
 
 
 def run() -> None:
