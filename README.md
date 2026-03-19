@@ -11,15 +11,20 @@
 - Торговля по списку инструментов из `SYMBOLS`, по умолчанию `BTCUSDT,ETHUSDT`.
 - Таймфрейм `15m` и стратегия на пересечении `EMA(20)` и `EMA(50)`.
 - Локальный `stop-loss` и `take-profit`.
+- Безопасный startup reconciliation перед торговым циклом: восстановление recoverable-позиций и блокировка mismatch-сценариев.
+- Operator workflow для `inspect`, `acknowledge`, `repair` и `unblock` по проблемным символам.
 - Ограничения риска: лимит риска на сделку, размер позиции, число одновременно открытых позиций, дневной лимит убытка и блокировка после серии убытков.
-- Логи в консоль и файлы, CSV-журналы сигналов, сделок и ошибок.
-- Telegram-уведомления о старте, сделках, API-ошибках и остановке торговли.
+- Логи в консоль и файлы, CSV-журналы сигналов, сделок, ошибок, reconciliation и repair-history.
+- Telegram-уведомления о старте, сделках, API-ошибках, startup mismatch и recovery-сценариях.
 
 ## Архитектура
 
 - `main.py` — корневая точка входа, добавляет `src` в `PYTHONPATH` и вызывает пакетный entrypoint.
 - `src/binance_bot/main.py` — тонкий bootstrap, который собирает runtime и запускает loop.
 - `src/binance_bot/services/runtime.py` — composition root и жизненный цикл приложения.
+- `src/binance_bot/services/reconciliation.py` — startup/restart reconciliation и safety guard перед loop.
+- `src/binance_bot/services/repair.py` — manual repair flow для blocked symbols и startup issues.
+- `src/binance_bot/services/status.py` — runtime status summary для operator flow и observability.
 - `src/binance_bot/services/cycle.py` — orchestration одного торгового цикла.
 - `src/binance_bot/services/position_monitor.py` — исполнение решений по открытым позициям.
 - `src/binance_bot/services/error_handler.py` — единая запись и уведомление по API-ошибкам.
@@ -29,9 +34,13 @@
 - `src/binance_bot/risk/manager.py` — риск-менеджмент и лимиты торговли.
 - `src/binance_bot/orders/manager.py` — открытие и закрытие позиций.
 - `src/binance_bot/notify/telegram.py` — уведомления в Telegram.
+- `src/binance_bot/use_cases/` — application use-cases для открытия и закрытия позиций.
 - `src/binance_bot/core/` — модели, state store, логирование, CSV-журналы, pure decisions и helpers округления.
 - `docs/architecture/` — архитектурные инварианты и overview проекта.
-- `tests/` — unit- и service-level тесты для strategy, risk, order manager, state store, decisions, cycle и position monitor.
+- `docs/architecture/changelog.md` — хронология архитектурных фаз и ключевых изменений по этапам.
+- `docs/backlog.md` — рабочий backlog проекта с приоритетами `Now / Next / Later / Not now`.
+- `tests/` — unit- и service-level тесты для strategy, risk, order manager, state store, decisions, reconciliation, cycle и position monitor.
+- `tests/fixtures/` — sample state payloads для regression-проверок старых и blocked state scenarios.
 - `.github/workflows/` — CI и одноразовый запуск бота через GitHub Actions.
 
 ## Границы ответственности
@@ -39,9 +48,45 @@
 - `strategy/` — только генерация сигналов, без сетевых вызовов и без исполнения ордеров.
 - `risk/` — только правила риска и sizing.
 - `orders/` — только исполнение открытия и закрытия позиций.
+- `use_cases/` — application flow для trade execution с явными входами и результатами.
 - `core/decisions.py` — pure decision logic без API, notifier, state persistence и journal writes.
+- `services/reconciliation.py` — единственная точка startup recovery и mismatch handling.
 - `services/` — orchestration и execution flow, но не источник торговых решений.
 - `clients/`, `notify/`, CSV-журналы — только IO.
+
+## Operator команды
+
+Просмотр текущего состояния:
+
+```bash
+python main.py inspect
+```
+
+Подтверждение startup issue:
+
+```bash
+python main.py acknowledge BTCUSDT
+```
+
+Ручной repair:
+
+```bash
+python main.py repair BTCUSDT restore-from-exchange
+python main.py repair BTCUSDT drop-local-state
+```
+
+Снятие block после исправления:
+
+```bash
+python main.py unblock BTCUSDT
+```
+
+## Runtime modes
+
+- `RUNTIME_MODE=trade` — normal execution.
+- `RUNTIME_MODE=startup-check-only` — только reconciliation без запуска цикла.
+- `RUNTIME_MODE=observe-only` — без исполнения BUY/SELL и без auto-close через monitor.
+- `RUNTIME_MODE=no-new-entries` — без новых BUY, но с обычной обработкой остального runtime.
 
 ## Быстрый старт
 
@@ -109,6 +154,7 @@ RUN_ONCE=false
 - `REQUEST_TIMEOUT_SECONDS`
 - `STALE_DATA_MULTIPLIER`
 - `QUOTE_ASSET`
+- `RUNTIME_MODE`
 
 ## Запуск
 
@@ -139,11 +185,11 @@ python -m pytest -q
 python -m ruff check .
 ```
 
-CI в GitHub Actions использует Python 3.11 и запускает те же проверки.
+CI в GitHub Actions использует Python 3.11, отдельно гоняет core tests, service-layer smoke и regression-проверки sample state fixtures.
 
 ## GitHub Actions
 
-- `CI` — ставит зависимости, запускает `ruff check .` и `pytest -q`.
+- `CI` — ставит зависимости, запускает `ruff check .`, core tests, service-layer smoke и state regression smoke.
 - `Run Bot Once` — запускает бота вручную через `workflow_dispatch` c `APP_MODE`, `SYMBOLS` и GitHub Secrets.
 
 ## Текущее покрытие тестами
@@ -153,6 +199,10 @@ CI в GitHub Actions использует Python 3.11 и запускает те
 - `tests/test_order_manager.py`
 - `tests/test_state_store.py`
 - `tests/test_decisions.py`
+- `tests/test_reconciliation.py`
+- `tests/test_repair.py`
+- `tests/test_status.py`
+- `tests/test_state_fixtures.py`
 - `tests/test_position_monitor.py`
 - `tests/test_cycle.py`
 

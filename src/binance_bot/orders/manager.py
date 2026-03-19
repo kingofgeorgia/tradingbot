@@ -2,15 +2,16 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from binance_bot.clients.binance_client import BinanceAPIError, BinanceSpotClient
+from binance_bot.clients.binance_client import BinanceSpotClient
 from binance_bot.config import Settings
 from binance_bot.core.journal import CsvJournal
 from binance_bot.core.logging_setup import Loggers
-from binance_bot.core.models import BotState, Position, SymbolFilters
+from binance_bot.core.models import BotState, ExchangePositionSnapshot, Position, SymbolFilters
 from binance_bot.core.state import StateStore
 from binance_bot.notify.telegram import TelegramNotifier
 from binance_bot.risk.manager import RiskManager
 from binance_bot.strategy.ema_cross import TradeSignal
+from binance_bot.use_cases.trade_execution import ClosePositionUseCase, OpenPositionUseCase
 
 
 class OrderManager:
@@ -33,6 +34,24 @@ class OrderManager:
         self._notifier = notifier
         self._signals_journal = signals_journal
         self._trades_journal = trades_journal
+        self._open_position = OpenPositionUseCase(
+            settings=settings,
+            client=client,
+            risk_manager=risk_manager,
+            state_store=state_store,
+            trades_journal=trades_journal,
+            trade_logger=loggers.trade,
+            notifier=notifier,
+        )
+        self._close_position = ClosePositionUseCase(
+            settings=settings,
+            client=client,
+            risk_manager=risk_manager,
+            state_store=state_store,
+            trades_journal=trades_journal,
+            trade_logger=loggers.trade,
+            notifier=notifier,
+        )
 
     def log_signal(self, signal: TradeSignal) -> None:
         self._signals_journal.write(
@@ -65,128 +84,46 @@ class OrderManager:
         total_equity: float,
         free_quote_balance: float,
     ) -> None:
-        quantity = self._risk_manager.calculate_order_quantity(
-            entry_price=signal.price,
+        self._open_position.execute(
+            signal=signal,
+            filters=filters,
+            state=state,
             total_equity=total_equity,
             free_quote_balance=free_quote_balance,
-            filters=filters,
         )
-        order_payload = self._client.create_market_order(signal.symbol, "BUY", quantity)
-        confirmed_payload = self._confirm_order(signal.symbol, order_payload)
 
-        average_price = self._client.calculate_average_fill_price(confirmed_payload)
-        quote_spent = float(confirmed_payload["cummulativeQuoteQty"])
-        fee_paid_quote = self._client.calculate_quote_fee(order_payload, self._settings.quote_asset)
-        position = Position(
-            symbol=signal.symbol,
-            quantity=float(confirmed_payload["executedQty"]),
+    def close_position(self, symbol: str, reason: str, state: BotState) -> str | None:
+        return self._close_position.execute(symbol=symbol, reason=reason, state=state)
+
+    def restore_position_from_exchange(self, snapshot: ExchangePositionSnapshot, state: BotState) -> None:
+        if snapshot.average_entry_price is None or snapshot.last_order_id is None:
+            raise ValueError(f"Cannot restore {snapshot.symbol} without exchange entry price and order id.")
+
+        average_price = snapshot.average_entry_price
+        quantity = snapshot.exchange_quantity
+        state.open_positions[snapshot.symbol] = Position(
+            symbol=snapshot.symbol,
+            quantity=quantity,
             entry_price=average_price,
             stop_loss=average_price * (1 - self._settings.stop_loss_pct),
             take_profit=average_price * (1 + self._settings.take_profit_pct),
             opened_at=self._utc_now_iso(),
-            order_id=int(confirmed_payload["orderId"]),
+            order_id=snapshot.last_order_id,
             mode=self._settings.app_mode,
-            quote_spent=quote_spent,
-            fee_paid_quote=fee_paid_quote,
-        )
-        state.open_positions[signal.symbol] = position
-        self._state_store.save(state)
-
-        self._trades_journal.write(
-            {
-                "timestamp_utc": self._utc_now_iso(),
-                "symbol": signal.symbol,
-                "side": "BUY",
-                "reason": signal.reason,
-                "price": round(average_price, 8),
-                "quantity": position.quantity,
-                "stop_loss": round(position.stop_loss, 8),
-                "take_profit": round(position.take_profit, 8),
-                "fee_quote": round(fee_paid_quote, 8),
-                "pnl_quote": "",
-                "mode": self._settings.app_mode,
-            }
-        )
-        self._loggers.trade.info(
-            "Opened BUY %s | price=%.4f qty=%.8f stop=%.4f take=%.4f",
-            signal.symbol,
-            average_price,
-            position.quantity,
-            position.stop_loss,
-            position.take_profit,
-        )
-        self._notifier.send(
-            f"[{self._settings.app_mode}] Opened BUY {signal.symbol}\n"
-            f"Price: {average_price:.4f}\n"
-            f"Qty: {position.quantity:.8f}\n"
-            f"Stop: {position.stop_loss:.4f}\n"
-            f"Take: {position.take_profit:.4f}"
+            quote_spent=average_price * quantity,
+            fee_paid_quote=0.0,
         )
 
-    def close_position(self, symbol: str, reason: str, state: BotState) -> str | None:
-        position = state.open_positions[symbol]
-        filters = self._client.get_symbol_filters(symbol)
-        quantity = self._client.round_step_size(position.quantity, filters.step_size)
-        if quantity <= 0:
-            raise BinanceAPIError(f"Position quantity for {symbol} became invalid after rounding.")
+    @staticmethod
+    def drop_local_position(symbol: str, state: BotState) -> None:
+        state.open_positions.pop(symbol, None)
+        state.suspect_positions.pop(symbol, None)
 
-        order_payload = self._client.create_market_order(symbol, "SELL", quantity)
-        confirmed_payload = self._confirm_order(symbol, order_payload)
-
-        average_price = self._client.calculate_average_fill_price(confirmed_payload)
-        quote_received = float(confirmed_payload["cummulativeQuoteQty"])
-        exit_fee_quote = self._client.calculate_quote_fee(order_payload, self._settings.quote_asset)
-        pnl_quote = quote_received - position.quote_spent - position.fee_paid_quote - exit_fee_quote
-        current_day = datetime.now(tz=UTC).date().isoformat()
-
-        del state.open_positions[symbol]
-        halt_reason = self._risk_manager.register_closed_trade(state, pnl_quote, current_day)
-        self._state_store.save(state)
-
-        self._trades_journal.write(
-            {
-                "timestamp_utc": self._utc_now_iso(),
-                "symbol": symbol,
-                "side": "SELL",
-                "reason": reason,
-                "price": round(average_price, 8),
-                "quantity": float(confirmed_payload["executedQty"]),
-                "stop_loss": round(position.stop_loss, 8),
-                "take_profit": round(position.take_profit, 8),
-                "fee_quote": round(exit_fee_quote, 8),
-                "pnl_quote": round(pnl_quote, 8),
-                "mode": self._settings.app_mode,
-            }
-        )
-        self._loggers.trade.info(
-            "Closed %s | price=%.4f qty=%.8f pnl=%.4f | %s",
-            symbol,
-            average_price,
-            float(confirmed_payload["executedQty"]),
-            pnl_quote,
-            reason,
-        )
-        self._notifier.send(
-            f"[{self._settings.app_mode}] Closed {symbol}\n"
-            f"Price: {average_price:.4f}\n"
-            f"PnL: {pnl_quote:.4f} {self._settings.quote_asset}\n"
-            f"Reason: {reason}"
-        )
-        if halt_reason is not None:
-            self._notifier.send(
-                f"[{self._settings.app_mode}] Trading halted\nReason: {halt_reason}\n"
-                f"Daily PnL: {state.daily_realized_pnl:.4f} {self._settings.quote_asset}"
-            )
-        return halt_reason
-
-    def _confirm_order(self, symbol: str, order_payload: dict[str, object]) -> dict[str, object]:
-        if order_payload.get("status") == "FILLED":
-            return order_payload
-        return self._client.confirm_order_filled(
-            symbol=symbol,
-            order_id=int(order_payload["orderId"]),
-            timeout_seconds=self._settings.order_confirm_timeout_seconds,
-        )
+    @staticmethod
+    def mark_position_unrecoverable(symbol: str, reason: str, state: BotState) -> None:
+        state.blocked_symbols[symbol] = reason
+        if symbol in state.open_positions:
+            state.suspect_positions[symbol] = reason
 
     @staticmethod
     def _utc_now_iso() -> str:

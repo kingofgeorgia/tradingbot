@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import tempfile
 import unittest
+import json
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -56,6 +57,34 @@ class StateStoreTests(unittest.TestCase):
             loaded_state = store.load()
 
             self.assertEqual(loaded_state.to_dict(), original_state.to_dict())
+
+    def test_load_old_state_without_reconciliation_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            state_file = Path(tmp_dir) / "state.json"
+            state_file.write_text(
+                json.dumps(
+                    {
+                        "trading_day": "2026-03-19",
+                        "day_start_equity": 1500.0,
+                        "daily_realized_pnl": 0.0,
+                        "consecutive_losses": 0,
+                        "open_positions": {},
+                        "halted_until_day": None,
+                        "total_closed_trades": 0,
+                        "last_processed_candle": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            store = StateStore(state_file)
+
+            state = store.load()
+
+            self.assertEqual(state.blocked_symbols, {})
+            self.assertEqual(state.suspect_positions, {})
+            self.assertEqual(state.startup_issues, [])
+            self.assertIsNone(state.last_reconciled_at)
+            self.assertIsNone(state.last_reconciliation_status)
 
 
 if __name__ == "__main__":

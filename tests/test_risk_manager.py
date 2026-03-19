@@ -20,6 +20,7 @@ def make_settings() -> Settings:
     project_root = Path(".")
     return Settings(
         app_mode="demo",
+        runtime_mode="trade",
         binance_api_key="key",
         binance_secret_key="secret",
         binance_recv_window=5000,

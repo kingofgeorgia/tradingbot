@@ -14,6 +14,8 @@ class StateStore:
         if not self._state_file.exists():
             return BotState()
         payload = json.loads(self._state_file.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("State file must contain a JSON object.")
         return BotState.from_dict(payload)
 
     def save(self, state: BotState) -> None:

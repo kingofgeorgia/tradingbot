@@ -260,6 +260,29 @@ class CycleTests(unittest.TestCase):
         self.assertEqual(self.order_manager.open_calls[0][0].action, "BUY")
         self.assertEqual(self.client.klines_calls[0][0], "BTCUSDT")
 
+    def test_blocked_symbol_is_skipped_but_other_symbols_continue(self) -> None:
+        self.state.blocked_symbols["BTCUSDT"] = "quantity-mismatch-between-local-and-exchange"
+        self.strategy.signals_by_symbol = {
+            "ETHUSDT": TradeSignal("ETHUSDT", "BUY", "ema20-crossed-above-ema50", 200.0, 201.0, 199.0, 1710000005000)
+        }
+
+        process_cycle(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            strategy=self.strategy,
+            risk_manager=self.risk_manager,
+            order_manager=self.order_manager,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(self.client.klines_calls[0][0], "ETHUSDT")
+        self.assertEqual(self.order_manager.open_calls[0][0].symbol, "ETHUSDT")
+        self.assertIn("Skipping %s: symbol blocked by startup reconciliation (%s)", self.loggers.app.records[0][0])
+
     def test_open_error_is_recorded(self) -> None:
         self.strategy.signals_by_symbol = {
             "BTCUSDT": TradeSignal("BTCUSDT", "BUY", "ema20-crossed-above-ema50", 100.0, 101.0, 99.0, 1710000000000),
@@ -281,6 +304,63 @@ class CycleTests(unittest.TestCase):
         )
 
         self.assertEqual(self.errors_journal.rows[0]["scope"], "open-position")
+
+    def test_no_new_entries_mode_skips_buy_execution(self) -> None:
+        self.settings.runtime_mode = "no-new-entries"
+        self.strategy.signals_by_symbol = {
+            "BTCUSDT": TradeSignal("BTCUSDT", "BUY", "ema20-crossed-above-ema50", 100.0, 101.0, 99.0, 1710000000000),
+            "ETHUSDT": TradeSignal("ETHUSDT", "HOLD", "no-crossover", 200.0, 201.0, 199.0, 1710000005000),
+        }
+
+        process_cycle(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            strategy=self.strategy,
+            risk_manager=self.risk_manager,
+            order_manager=self.order_manager,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(self.order_manager.open_calls, [])
+
+    def test_observe_only_mode_skips_sell_execution(self) -> None:
+        self.settings.runtime_mode = "observe-only"
+        self.state.open_positions["BTCUSDT"] = Position(
+            symbol="BTCUSDT",
+            quantity=0.25,
+            entry_price=100.0,
+            stop_loss=98.0,
+            take_profit=104.0,
+            opened_at="2026-03-19T12:00:00+00:00",
+            order_id=1,
+            mode="demo",
+            quote_spent=25.0,
+            fee_paid_quote=0.1,
+        )
+        self.client.latest_prices["BTCUSDT"] = 100.0
+        self.strategy.signals_by_symbol = {
+            "BTCUSDT": TradeSignal("BTCUSDT", "SELL", "ema20-crossed-below-ema50", 100.0, 99.0, 101.0, 1710000000000),
+            "ETHUSDT": TradeSignal("ETHUSDT", "HOLD", "no-crossover", 200.0, 201.0, 199.0, 1710000005000),
+        }
+
+        process_cycle(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            strategy=self.strategy,
+            risk_manager=self.risk_manager,
+            order_manager=self.order_manager,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(self.order_manager.close_calls, [])
 
     def test_close_error_is_recorded(self) -> None:
         self.state.open_positions["BTCUSDT"] = Position(

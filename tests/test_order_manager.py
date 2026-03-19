@@ -10,7 +10,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from binance_bot.clients.binance_client import BinanceAPIError
-from binance_bot.core.models import BotState, Position, SymbolFilters
+from binance_bot.core.models import BotState, ExchangePositionSnapshot, Position, SymbolFilters
 from binance_bot.orders.manager import OrderManager
 from binance_bot.strategy.ema_cross import TradeSignal
 from tests.fakes import (
@@ -158,6 +158,48 @@ class OrderManagerTests(unittest.TestCase):
 
         with self.assertRaises(BinanceAPIError):
             self.manager.close_position("BTCUSDT", "stop-loss-hit", state)
+
+    def test_restore_position_from_exchange_recreates_local_position(self) -> None:
+        state = BotState()
+        snapshot = ExchangePositionSnapshot(
+            symbol="BTCUSDT",
+            base_asset="BTC",
+            exchange_quantity=0.25,
+            average_entry_price=100.0,
+            last_order_id=303,
+            last_trade_time=1710000000000,
+            has_open_orders=False,
+            has_recent_trades=True,
+            step_size=0.001,
+        )
+
+        self.manager.restore_position_from_exchange(snapshot, state)
+
+        self.assertEqual(state.open_positions["BTCUSDT"].order_id, 303)
+        self.assertAlmostEqual(state.open_positions["BTCUSDT"].stop_loss, 98.0)
+
+    def test_mark_position_unrecoverable_blocks_symbol(self) -> None:
+        state = BotState(
+            open_positions={
+                "BTCUSDT": Position(
+                    symbol="BTCUSDT",
+                    quantity=0.25,
+                    entry_price=100.0,
+                    stop_loss=98.0,
+                    take_profit=104.0,
+                    opened_at="2026-03-20T10:00:00+00:00",
+                    order_id=101,
+                    mode="demo",
+                    quote_spent=25.0,
+                    fee_paid_quote=0.1,
+                )
+            }
+        )
+
+        self.manager.mark_position_unrecoverable("BTCUSDT", "quantity-mismatch", state)
+
+        self.assertEqual(state.blocked_symbols["BTCUSDT"], "quantity-mismatch")
+        self.assertEqual(state.suspect_positions["BTCUSDT"], "quantity-mismatch")
 
 
 if __name__ == "__main__":

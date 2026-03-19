@@ -50,6 +50,11 @@ def process_cycle(
     )
 
     for symbol in settings.symbols:
+        block_reason = state.blocked_symbols.get(symbol)
+        if block_reason:
+            loggers.app.info("Skipping %s: symbol blocked by startup reconciliation (%s)", symbol, block_reason)
+            continue
+
         try:
             candles = client.get_klines(symbol, settings.timeframe, settings.candle_limit)
             last_processed_candle = state.last_processed_candle.get(symbol)
@@ -119,6 +124,10 @@ def _load_portfolio_snapshot(*, client, settings, errors_journal, notifier, logg
 
 
 def _handle_sell_signal(*, symbol, reason, state, state_store, order_manager, settings, errors_journal, notifier, loggers) -> None:
+    if settings.runtime_mode == "observe-only":
+        loggers.app.info("Skipping SELL execution for %s because runtime_mode=observe-only", symbol)
+        return
+
     try:
         halt_reason = order_manager.close_position(symbol, reason, state)
         state_store.save(state)
@@ -144,6 +153,13 @@ def _handle_buy_signal(
     notifier,
     loggers,
 ) -> None:
+    if settings.runtime_mode == "observe-only":
+        loggers.app.info("Skipping BUY execution for %s because runtime_mode=observe-only", symbol)
+        return
+    if settings.runtime_mode == "no-new-entries":
+        loggers.app.info("Skipping BUY execution for %s because runtime_mode=no-new-entries", symbol)
+        return
+
     can_open, reason = risk_manager.can_open_position(symbol, state, current_day)
     risk_decision = decide_risk_entry(can_open, reason)
     if not risk_decision.allowed:

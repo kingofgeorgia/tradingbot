@@ -15,6 +15,8 @@ from binance_bot.strategy.ema_cross import EmaCrossStrategy
 
 from binance_bot.services.cycle import process_cycle
 from binance_bot.services.error_handler import utc_now_iso
+from binance_bot.services.reconciliation import apply_reconciliation_result, reconcile_runtime_state
+from binance_bot.services.status import build_runtime_status_report, format_status_report
 
 
 @dataclass(slots=True)
@@ -24,6 +26,8 @@ class AppRuntime:
     signals_journal: CsvJournal
     trades_journal: CsvJournal
     errors_journal: CsvJournal
+    reconciliation_journal: CsvJournal
+    repair_journal: CsvJournal
     notifier: TelegramNotifier
     client: BinanceSpotClient
     state_store: StateStore
@@ -62,6 +66,14 @@ def build_runtime() -> AppRuntime:
         settings.errors_journal_file,
         ["timestamp_utc", "scope", "symbol", "error_type", "message", "mode"],
     )
+    reconciliation_journal = CsvJournal(
+        settings.reconciliation_journal_file,
+        ["timestamp_utc", "symbol", "issue_type", "local_qty", "exchange_qty", "action", "status", "mode"],
+    )
+    repair_journal = CsvJournal(
+        settings.repair_journal_file,
+        ["timestamp_utc", "symbol", "action", "status", "note", "mode"],
+    )
 
     notifier = TelegramNotifier(settings.telegram_bot_token, settings.telegram_chat_id, loggers.error)
     client = BinanceSpotClient(settings)
@@ -93,6 +105,8 @@ def build_runtime() -> AppRuntime:
         signals_journal=signals_journal,
         trades_journal=trades_journal,
         errors_journal=errors_journal,
+        reconciliation_journal=reconciliation_journal,
+        repair_journal=repair_journal,
         notifier=notifier,
         client=client,
         state_store=state_store,
@@ -102,14 +116,45 @@ def build_runtime() -> AppRuntime:
     )
 
 
+def reconcile_startup(runtime: AppRuntime) -> None:
+    state = runtime.state_store.load()
+    result = reconcile_runtime_state(
+        settings=runtime.settings,
+        client=runtime.client,
+        state=state,
+    )
+    apply_reconciliation_result(
+        settings=runtime.settings,
+        state=state,
+        state_store=runtime.state_store,
+        order_manager=runtime.order_manager,
+        result=result,
+        reconciliation_journal=runtime.reconciliation_journal,
+        errors_journal=runtime.errors_journal,
+        notifier=runtime.notifier,
+        loggers=runtime.loggers,
+    )
+    refreshed_state = runtime.state_store.load()
+    runtime.loggers.app.info("Startup status summary:\n%s", format_status_report(build_runtime_status_report(
+        settings=runtime.settings,
+        state=refreshed_state,
+    )))
+
+
 def run_loop(runtime: AppRuntime) -> None:
+    if runtime.settings.runtime_mode == "startup-check-only":
+        runtime.loggers.app.info("RUNTIME_MODE=startup-check-only, skipping trading loop.")
+        return
+
     runtime.loggers.app.info(
-        "Bot started in %s mode for symbols: %s",
+        "Bot started in %s mode for symbols: %s | runtime_mode=%s",
         runtime.settings.app_mode,
         ", ".join(runtime.settings.symbols),
+        runtime.settings.runtime_mode,
     )
     runtime.notifier.send(
-        f"[{runtime.settings.app_mode}] Bot started for symbols: {', '.join(runtime.settings.symbols)}"
+        f"[{runtime.settings.app_mode}] Bot started for symbols: {', '.join(runtime.settings.symbols)}\n"
+        f"Runtime mode: {runtime.settings.runtime_mode}"
     )
 
     while True:
@@ -129,19 +174,27 @@ def run_loop(runtime: AppRuntime) -> None:
                 loggers=runtime.loggers,
             )
         except Exception as exc:
-            runtime.loggers.error.error("Fatal error in trading loop: %s", exc, exc_info=True)
+            runtime.loggers.error.error("[critical/fatal-loop] Fatal error in trading loop: %s", exc, exc_info=True)
             runtime.errors_journal.write(
                 {
                     "timestamp_utc": utc_now_iso(),
                     "scope": "main-loop",
                     "symbol": "",
                     "error_type": type(exc).__name__,
-                    "message": str(exc),
+                    "message": f"[critical/fatal-loop] {exc}",
                     "mode": runtime.settings.app_mode,
                 }
             )
-            runtime.notifier.send(f"[{runtime.settings.app_mode}] Fatal bot error: {exc}")
+            runtime.notifier.send(f"[{runtime.settings.app_mode}] CRITICAL fatal bot error: {exc}")
             raise
+
+        current_state = runtime.state_store.load()
+        runtime.loggers.app.info(
+            "Cycle summary | open_positions=%s blocked_symbols=%s startup_issues=%s",
+            len(current_state.open_positions),
+            len(current_state.blocked_symbols),
+            len(current_state.startup_issues),
+        )
 
         if runtime.settings.run_once:
             runtime.loggers.app.info("RUN_ONCE enabled, stopping after one cycle.")

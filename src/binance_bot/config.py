@@ -9,11 +9,13 @@ from dotenv import load_dotenv
 
 
 AppMode = Literal["demo", "live"]
+RuntimeMode = Literal["trade", "startup-check-only", "observe-only", "no-new-entries"]
 
 
 @dataclass(slots=True)
 class Settings:
     app_mode: AppMode
+    runtime_mode: RuntimeMode
     binance_api_key: str
     binance_secret_key: str
     binance_recv_window: int
@@ -65,6 +67,14 @@ class Settings:
         return self.data_dir / "errors.csv"
 
     @property
+    def reconciliation_journal_file(self) -> Path:
+        return self.data_dir / "reconciliation.csv"
+
+    @property
+    def repair_journal_file(self) -> Path:
+        return self.data_dir / "repair.csv"
+
+    @property
     def app_log_file(self) -> Path:
         return self.logs_dir / "app.log"
 
@@ -81,12 +91,17 @@ def load_settings() -> Settings:
     if app_mode not in {"demo", "live"}:
         raise ValueError("APP_MODE must be 'demo' or 'live'.")
 
+    runtime_mode = os.getenv("RUNTIME_MODE", "trade").strip().lower()
+    if runtime_mode not in {"trade", "startup-check-only", "observe-only", "no-new-entries"}:
+        raise ValueError("RUNTIME_MODE must be one of: trade, startup-check-only, observe-only, no-new-entries.")
+
     symbols = [item.strip().upper() for item in os.getenv("SYMBOLS", "BTCUSDT,ETHUSDT").split(",") if item.strip()]
     if not symbols:
         raise ValueError("At least one trading symbol must be configured in SYMBOLS.")
 
     settings = Settings(
         app_mode=app_mode,
+        runtime_mode=runtime_mode,
         binance_api_key=os.getenv("BINANCE_API_KEY", "").strip(),
         binance_secret_key=os.getenv("BINANCE_SECRET_KEY", "").strip(),
         binance_recv_window=int(os.getenv("BINANCE_RECV_WINDOW", "5000")),

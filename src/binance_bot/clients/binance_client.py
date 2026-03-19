@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 import requests
 
 from binance_bot.config import Settings
-from binance_bot.core.models import Candle, SymbolFilters
+from binance_bot.core.models import Candle, ExchangePositionSnapshot, SymbolFilters
 from binance_bot.core.rounding import round_down_to_step
 
 
@@ -125,6 +125,42 @@ class BinanceSpotClient:
             signed=True,
         )
 
+    def get_open_orders(self, symbol: str) -> list[dict[str, Any]]:
+        payload = self._request("GET", "/api/v3/openOrders", params={"symbol": symbol}, signed=True)
+        return list(payload)
+
+    def get_my_trades(self, symbol: str, limit: int = 20) -> list[dict[str, Any]]:
+        payload = self._request(
+            "GET",
+            "/api/v3/myTrades",
+            params={"symbol": symbol, "limit": limit},
+            signed=True,
+        )
+        return list(payload)
+
+    def get_base_asset_balance(self, symbol: str, quote_asset: str) -> float:
+        base_asset = self._base_asset_for_symbol(symbol, quote_asset)
+        return self.get_asset_total_balance(base_asset)
+
+    def get_position_snapshot(self, symbol: str, quote_asset: str) -> ExchangePositionSnapshot:
+        base_asset = self._base_asset_for_symbol(symbol, quote_asset)
+        quantity = self.get_base_asset_balance(symbol, quote_asset)
+        filters = self.get_symbol_filters(symbol)
+        open_orders = self.get_open_orders(symbol)
+        trades = self.get_my_trades(symbol)
+        average_entry_price, last_order_id, last_trade_time = self._estimate_position_from_trades(trades, quantity)
+        return ExchangePositionSnapshot(
+            symbol=symbol,
+            base_asset=base_asset,
+            exchange_quantity=quantity,
+            average_entry_price=average_entry_price,
+            last_order_id=last_order_id,
+            last_trade_time=last_trade_time,
+            has_open_orders=bool(open_orders),
+            has_recent_trades=bool(trades),
+            step_size=filters.step_size,
+        )
+
     def confirm_order_filled(self, symbol: str, order_id: int, timeout_seconds: int) -> dict[str, Any]:
         deadline = time.time() + timeout_seconds
         latest_payload: dict[str, Any] | None = None
@@ -160,6 +196,50 @@ class BinanceSpotClient:
     @staticmethod
     def round_step_size(value: float, step_size: float) -> float:
         return round_down_to_step(value, step_size)
+
+    @staticmethod
+    def _base_asset_for_symbol(symbol: str, quote_asset: str) -> str:
+        if not symbol.endswith(quote_asset):
+            raise BinanceAPIError(f"Symbol {symbol} does not end with quote asset {quote_asset}.")
+        return symbol[: -len(quote_asset)]
+
+    @staticmethod
+    def _estimate_position_from_trades(
+        trades: list[dict[str, Any]],
+        current_quantity: float,
+    ) -> tuple[float | None, int | None, int | None]:
+        if not trades or current_quantity <= 0:
+            return None, None, None
+
+        sorted_trades = sorted(trades, key=lambda item: int(item.get("time", 0)))
+        remaining_qty = 0.0
+        remaining_quote = 0.0
+
+        for trade in sorted_trades:
+            quantity = float(trade.get("qty", 0.0))
+            quote_qty = float(trade.get("quoteQty", 0.0))
+            if trade.get("isBuyer"):
+                remaining_qty += quantity
+                remaining_quote += quote_qty
+                continue
+
+            if remaining_qty <= 0:
+                continue
+            if quantity >= remaining_qty:
+                remaining_qty = 0.0
+                remaining_quote = 0.0
+                continue
+
+            ratio = (remaining_qty - quantity) / remaining_qty
+            remaining_qty -= quantity
+            remaining_quote *= ratio
+
+        if remaining_qty <= 0 or remaining_quote <= 0:
+            return None, None, None
+
+        average_price = remaining_quote / remaining_qty
+        latest_trade = sorted_trades[-1]
+        return average_price, int(latest_trade.get("orderId", 0)) or None, int(latest_trade.get("time", 0)) or None
 
     def _request(
         self,

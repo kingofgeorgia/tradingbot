@@ -16,7 +16,15 @@ def manage_open_positions(
     notifier,
     loggers,
 ) -> None:
+    if settings.runtime_mode == "observe-only":
+        loggers.app.info("Skipping position monitor execution because runtime_mode=observe-only")
+        return
+
     for symbol, position in list(state.open_positions.items()):
+        if symbol in state.suspect_positions:
+            loggers.app.info("Skipping suspect position for %s: %s", symbol, state.suspect_positions[symbol])
+            continue
+
         try:
             current_price = client.get_latest_price(symbol)
         except BinanceAPIError as exc:

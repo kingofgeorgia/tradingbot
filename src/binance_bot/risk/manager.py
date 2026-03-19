@@ -21,6 +21,8 @@ class RiskManager:
     def can_open_position(self, symbol: str, state: BotState, current_day: str) -> tuple[bool, str]:
         if state.halted_until_day == current_day:
             return False, "trading-halted-for-the-day"
+        if symbol in state.blocked_symbols:
+            return False, state.blocked_symbols[symbol]
         if symbol in state.open_positions:
             return False, "position-already-open-for-symbol"
         if len(state.open_positions) >= self._settings.max_open_positions_total:

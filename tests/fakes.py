@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from binance_bot.config import Settings
-from binance_bot.core.models import BotState
+from binance_bot.core.models import BotState, ExchangePositionSnapshot
 
 
 class FakeJournal:
@@ -54,6 +54,10 @@ class FakeStateStore:
         self.saved_states.append(state)
 
 
+class FakeCsvJournal(FakeJournal):
+    pass
+
+
 class FakeRiskManager:
     def __init__(self, quantity: float, halt_reason: str | None = None) -> None:
         self.quantity = quantity
@@ -96,6 +100,8 @@ class FakeRiskManager:
 
     def can_open_position(self, symbol: str, state: BotState, current_day: str) -> tuple[bool, str]:
         self.can_open_calls.append((symbol, state, current_day))
+        if symbol in state.blocked_symbols:
+            return False, state.blocked_symbols[symbol]
         return self.next_can_open
 
     def refresh_trading_day(self, state: BotState, current_day: str, current_equity: float) -> None:
@@ -129,6 +135,11 @@ class FakeBinanceClient:
         self.balance_calls: list[str] = []
         self.klines_calls: list[tuple[str, str, int]] = []
         self.latest_price_calls: list[str] = []
+        self.base_asset_balances: dict[str, float] = {}
+        self.open_orders_by_symbol: dict[str, list[dict[str, object]]] = {}
+        self.trades_by_symbol: dict[str, list[dict[str, object]]] = {}
+        self.position_snapshots: dict[str, ExchangePositionSnapshot] = {}
+        self.position_snapshot_errors: dict[str, Exception] = {}
 
     def create_market_order(self, symbol: str, side: str, quantity: float) -> dict[str, object]:
         self.created_orders.append((symbol, side, quantity))
@@ -181,6 +192,34 @@ class FakeBinanceClient:
             raise self.klines_errors[symbol]
         return self.klines_by_symbol[symbol]
 
+    def get_open_orders(self, symbol: str) -> list[dict[str, object]]:
+        return list(self.open_orders_by_symbol.get(symbol, []))
+
+    def get_my_trades(self, symbol: str, limit: int = 20) -> list[dict[str, object]]:
+        return list(self.trades_by_symbol.get(symbol, []))[:limit]
+
+    def get_base_asset_balance(self, symbol: str, quote_asset: str) -> float:
+        base_asset = symbol[: -len(quote_asset)]
+        return self.base_asset_balances.get(base_asset, 0.0)
+
+    def get_position_snapshot(self, symbol: str, quote_asset: str) -> ExchangePositionSnapshot:
+        if symbol in self.position_snapshot_errors:
+            raise self.position_snapshot_errors[symbol]
+        if symbol in self.position_snapshots:
+            return self.position_snapshots[symbol]
+        step_size = getattr(self.filters_by_symbol.get(symbol), "step_size", 0.001)
+        return ExchangePositionSnapshot(
+            symbol=symbol,
+            base_asset=symbol[: -len(quote_asset)],
+            exchange_quantity=self.get_base_asset_balance(symbol, quote_asset),
+            average_entry_price=None,
+            last_order_id=None,
+            last_trade_time=None,
+            has_open_orders=bool(self.open_orders_by_symbol.get(symbol)),
+            has_recent_trades=bool(self.trades_by_symbol.get(symbol)),
+            step_size=step_size,
+        )
+
     def round_step_size(self, value: float, step_size: float) -> float:
         if self.rounded_quantity is not None:
             return self.rounded_quantity
@@ -191,6 +230,7 @@ def make_settings() -> Settings:
     project_root = Path(".")
     return Settings(
         app_mode="demo",
+        runtime_mode="trade",
         binance_api_key="key",
         binance_secret_key="secret",
         binance_recv_window=5000,

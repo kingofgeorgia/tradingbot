@@ -184,6 +184,41 @@ class PositionMonitorTests(unittest.TestCase):
         self.assertEqual(len(self.errors_journal.rows), 1)
         self.assertEqual(self.order_manager.close_calls[0][0], "ETHUSDT")
 
+    def test_suspect_position_is_not_auto_closed(self) -> None:
+        self.state.suspect_positions["BTCUSDT"] = "local-position-missing-on-exchange"
+        self.client.latest_prices["BTCUSDT"] = 97.0
+
+        manage_open_positions(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            order_manager=self.order_manager,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(self.order_manager.close_calls, [])
+        self.assertEqual(self.state_store.saved_states, [])
+
+    def test_observe_only_mode_skips_monitor_execution(self) -> None:
+        self.settings.runtime_mode = "observe-only"
+        self.client.latest_prices["BTCUSDT"] = 97.0
+
+        manage_open_positions(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            order_manager=self.order_manager,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(self.order_manager.close_calls, [])
+
 
 if __name__ == "__main__":
     unittest.main()

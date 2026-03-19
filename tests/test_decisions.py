@@ -9,7 +9,15 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from binance_bot.core.decisions import decide_position_close, decide_risk_entry, decide_signal_action
+from binance_bot.core.decisions import (
+    decide_position_close,
+    decide_reconciliation_action,
+    decide_risk_entry,
+    decide_signal_action,
+    decide_state_repair,
+    decide_symbol_block,
+)
+from binance_bot.core.models import ExchangePositionSnapshot, Position
 
 
 class DecisionTests(unittest.TestCase):
@@ -92,6 +100,90 @@ class DecisionTests(unittest.TestCase):
         self.assertEqual(decision.action, "ignore")
         self.assertFalse(decision.should_log_signal)
         self.assertEqual(decision.reason, "unsupported-signal-action")
+
+    def test_decide_state_repair_restores_exchange_position_without_local_state(self) -> None:
+        snapshot = ExchangePositionSnapshot(
+            symbol="BTCUSDT",
+            base_asset="BTC",
+            exchange_quantity=0.25,
+            average_entry_price=100.0,
+            last_order_id=123,
+            last_trade_time=1710000000000,
+            has_open_orders=False,
+            has_recent_trades=True,
+            step_size=0.001,
+        )
+
+        decision = decide_state_repair(None, snapshot)
+
+        self.assertTrue(decision.should_restore)
+        self.assertEqual(decision.action, "restore-from-exchange")
+
+    def test_decide_reconciliation_action_marks_missing_exchange_position(self) -> None:
+        position = Position(
+            symbol="BTCUSDT",
+            quantity=0.25,
+            entry_price=100.0,
+            stop_loss=98.0,
+            take_profit=104.0,
+            opened_at="2026-03-20T10:00:00+00:00",
+            order_id=1,
+            mode="demo",
+            quote_spent=25.0,
+            fee_paid_quote=0.1,
+        )
+        snapshot = ExchangePositionSnapshot(
+            symbol="BTCUSDT",
+            base_asset="BTC",
+            exchange_quantity=0.0,
+            average_entry_price=None,
+            last_order_id=None,
+            last_trade_time=None,
+            has_open_orders=False,
+            has_recent_trades=False,
+            step_size=0.001,
+        )
+
+        decision = decide_reconciliation_action(position, snapshot)
+
+        self.assertEqual(decision.action, "mark-unrecoverable")
+        self.assertEqual(decision.issue_type, "local-position-missing-on-exchange")
+
+    def test_decide_reconciliation_action_blocks_quantity_mismatch(self) -> None:
+        position = Position(
+            symbol="BTCUSDT",
+            quantity=0.25,
+            entry_price=100.0,
+            stop_loss=98.0,
+            take_profit=104.0,
+            opened_at="2026-03-20T10:00:00+00:00",
+            order_id=1,
+            mode="demo",
+            quote_spent=25.0,
+            fee_paid_quote=0.1,
+        )
+        snapshot = ExchangePositionSnapshot(
+            symbol="BTCUSDT",
+            base_asset="BTC",
+            exchange_quantity=0.20,
+            average_entry_price=100.0,
+            last_order_id=1,
+            last_trade_time=1710000000000,
+            has_open_orders=False,
+            has_recent_trades=True,
+            step_size=0.001,
+        )
+
+        decision = decide_reconciliation_action(position, snapshot)
+
+        self.assertEqual(decision.action, "block-symbol")
+        self.assertEqual(decision.issue_type, "quantity-mismatch")
+
+    def test_decide_symbol_block_for_reconciliation_issue(self) -> None:
+        decision = decide_symbol_block("block-symbol", "quantity-mismatch-between-local-and-exchange")
+
+        self.assertTrue(decision.blocked)
+        self.assertTrue(decision.suspect_position)
 
 
 if __name__ == "__main__":

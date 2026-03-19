@@ -28,5 +28,11 @@ jobs:
       - name: Ruff
         run: ruff check .
 
-      - name: Tests
-        run: pytest -q
+      - name: Unit and Core Tests
+        run: pytest -q tests/test_ema_cross.py tests/test_risk_manager.py tests/test_order_manager.py tests/test_state_store.py tests/test_decisions.py tests/test_trade_execution.py
+
+      - name: Service Layer Smoke
+        run: pytest -q tests/test_cycle.py tests/test_position_monitor.py tests/test_reconciliation.py tests/test_repair.py tests/test_status.py
+
+      - name: State Regression Smoke
+        run: pytest -q tests/test_state_fixtures.py

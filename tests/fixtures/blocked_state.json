@@ -1,0 +1,34 @@
+{
+  "trading_day": "2026-03-20",
+  "day_start_equity": 1000.0,
+  "daily_realized_pnl": 0.0,
+  "consecutive_losses": 0,
+  "open_positions": {},
+  "halted_until_day": null,
+  "total_closed_trades": 0,
+  "last_processed_candle": {},
+  "blocked_symbols": {
+    "BTCUSDT": "quantity-mismatch-between-local-and-exchange"
+  },
+  "suspect_positions": {},
+  "startup_issues": [
+    {
+      "symbol": "BTCUSDT",
+      "issue_type": "quantity-mismatch",
+      "local_qty": 0.25,
+      "exchange_qty": 0.2,
+      "action": "block-symbol",
+      "status": "open",
+      "message": "BTCUSDT: quantity-mismatch-between-local-and-exchange | local_qty=0.25000000 | exchange_qty=0.20000000"
+    }
+  ],
+  "acknowledged_startup_issues": [],
+  "alerted_startup_issues": [
+    "BTCUSDT:quantity-mismatch:block-symbol"
+  ],
+  "repair_history": [],
+  "last_reconciled_at": "2026-03-20T10:00:00+00:00",
+  "last_reconciliation_status": "blocked-symbols-present",
+  "last_manual_review_at": null,
+  "last_manual_action_by_symbol": {}
+}
