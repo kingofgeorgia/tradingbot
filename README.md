@@ -3,7 +3,7 @@
 [![CI](https://github.com/kingofgeorgia/tradingbot/actions/workflows/ci.yml/badge.svg)](https://github.com/kingofgeorgia/tradingbot/actions/workflows/ci.yml)
 [![Run Bot Once](https://github.com/kingofgeorgia/tradingbot/actions/workflows/run-bot.yml/badge.svg)](https://github.com/kingofgeorgia/tradingbot/actions/workflows/run-bot.yml)
 
-Локальный торговый бот для Binance Spot на Python 3.11+ с EMA crossover стратегией, встроенным риск-менеджментом, журналированием и Telegram-уведомлениями.
+Локальный торговый бот для Binance Spot на Python 3.11+ с EMA crossover стратегией, риск-менеджментом, журналированием и Telegram-уведомлениями.
 
 ## Что умеет
 
@@ -17,27 +17,143 @@
 
 ## Архитектура
 
-- `main.py` — точка входа, добавляет `src` в `PYTHONPATH` и запускает бота.
-- `src/binance_bot/main.py` — тонкий bootstrap и основной цикл.
-- `src/binance_bot/services/runtime.py` — сборка runtime-зависимостей.
+- `main.py` — корневая точка входа, добавляет `src` в `PYTHONPATH` и вызывает пакетный entrypoint.
+- `src/binance_bot/main.py` — тонкий bootstrap, который собирает runtime и запускает loop.
+- `src/binance_bot/services/runtime.py` — composition root и жизненный цикл приложения.
 - `src/binance_bot/services/cycle.py` — orchestration одного торгового цикла.
-- `src/binance_bot/services/position_monitor.py` — контроль открытых позиций по локальному stop-loss / take-profit.
-- `src/binance_bot/services/error_handler.py` — единая обработка и журналирование API-ошибок.
+- `src/binance_bot/services/position_monitor.py` — исполнение решений по открытым позициям.
+- `src/binance_bot/services/error_handler.py` — единая запись и уведомление по API-ошибкам.
 - `src/binance_bot/config.py` — загрузка `.env`, валидация настроек и подготовка runtime-директорий.
 - `src/binance_bot/clients/binance_client.py` — REST-клиент Binance Spot.
 - `src/binance_bot/strategy/ema_cross.py` — вычисление EMA и генерация сигналов.
 - `src/binance_bot/risk/manager.py` — риск-менеджмент и лимиты торговли.
 - `src/binance_bot/orders/manager.py` — открытие и закрытие позиций.
 - `src/binance_bot/notify/telegram.py` — уведомления в Telegram.
-- `src/binance_bot/core/` — модели, state store, логирование и CSV-журналы.
+- `src/binance_bot/core/` — модели, state store, логирование, CSV-журналы, pure decisions и helpers округления.
 - `docs/architecture/` — архитектурные инварианты и overview проекта.
-- `tests/` — unit-тесты стратегии, risk manager, order manager и state store.
+- `tests/` — unit- и service-level тесты для strategy, risk, order manager, state store, decisions, cycle и position monitor.
 - `.github/workflows/` — CI и одноразовый запуск бота через GitHub Actions.
+
+## Границы ответственности
+
+- `strategy/` — только генерация сигналов, без сетевых вызовов и без исполнения ордеров.
+- `risk/` — только правила риска и sizing.
+- `orders/` — только исполнение открытия и закрытия позиций.
+- `core/decisions.py` — pure decision logic без API, notifier, state persistence и journal writes.
+- `services/` — orchestration и execution flow, но не источник торговых решений.
+- `clients/`, `notify/`, CSV-журналы — только IO.
 
 ## Быстрый старт
 
 1. Установите Python 3.11+.
-2. Создайте виртуальное окружение.
+2. Создайте и активируйте виртуальное окружение.
+3. Установите зависимости.
+4. Создайте `.env` в корне проекта.
+5. Запустите бота или тесты.
+
+### Создание окружения
 
 ```bash
 python -m venv .venv
+```
+
+PowerShell:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+Git Bash:
+
+```bash
+source .venv/Scripts/activate
+```
+
+### Установка зависимостей
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+pip install pytest ruff
+```
+
+## Настройки
+
+Минимально required в `.env`:
+
+```env
+APP_MODE=demo
+BINANCE_API_KEY=your_key
+BINANCE_SECRET_KEY=your_secret
+SYMBOLS=BTCUSDT,ETHUSDT
+TIMEFRAME=15m
+RUN_ONCE=false
+```
+
+Дополнительно поддерживаются:
+
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+- `FAST_EMA_PERIOD`
+- `SLOW_EMA_PERIOD`
+- `STOP_LOSS_PCT`
+- `TAKE_PROFIT_PCT`
+- `RISK_PER_TRADE_PCT`
+- `MAX_POSITION_PCT`
+- `MAX_OPEN_POSITIONS_TOTAL`
+- `MAX_OPEN_POSITIONS_PER_SYMBOL`
+- `DAILY_LOSS_LIMIT_PCT`
+- `MAX_CONSECUTIVE_LOSSES`
+- `LOOP_INTERVAL_SECONDS`
+- `ORDER_CONFIRM_TIMEOUT_SECONDS`
+- `REQUEST_TIMEOUT_SECONDS`
+- `STALE_DATA_MULTIPLIER`
+- `QUOTE_ASSET`
+
+## Запуск
+
+Локальный запуск:
+
+```bash
+python main.py
+```
+
+Одноразовый локальный прогон:
+
+```bash
+set RUN_ONCE=true
+python main.py
+```
+
+## Проверки
+
+Запуск тестов:
+
+```bash
+python -m pytest -q
+```
+
+Запуск линтера:
+
+```bash
+python -m ruff check .
+```
+
+CI в GitHub Actions использует Python 3.11 и запускает те же проверки.
+
+## GitHub Actions
+
+- `CI` — ставит зависимости, запускает `ruff check .` и `pytest -q`.
+- `Run Bot Once` — запускает бота вручную через `workflow_dispatch` c `APP_MODE`, `SYMBOLS` и GitHub Secrets.
+
+## Текущее покрытие тестами
+
+- `tests/test_ema_cross.py`
+- `tests/test_risk_manager.py`
+- `tests/test_order_manager.py`
+- `tests/test_state_store.py`
+- `tests/test_decisions.py`
+- `tests/test_position_monitor.py`
+- `tests/test_cycle.py`
+
+Общие test doubles находятся в `tests/fakes.py`.
