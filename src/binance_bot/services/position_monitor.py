@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from binance_bot.clients.binance_client import BinanceAPIError
+from binance_bot.core.decisions import decide_position_close
 from binance_bot.services.error_handler import record_api_error
 
 
@@ -22,17 +23,20 @@ def manage_open_positions(
             record_api_error(errors_journal, notifier, loggers, settings.app_mode, "position-monitoring", symbol, exc)
             continue
 
-        if current_price <= position.stop_loss:
-            try:
-                order_manager.close_position(symbol, "stop-loss-hit", state)
-                state_store.save(state)
-            except BinanceAPIError as exc:
-                record_api_error(errors_journal, notifier, loggers, settings.app_mode, "stop-loss-close", symbol, exc)
+        close_decision = decide_position_close(current_price, position.stop_loss, position.take_profit)
+        if not close_decision.should_close:
             continue
 
-        if current_price >= position.take_profit:
-            try:
-                order_manager.close_position(symbol, "take-profit-hit", state)
-                state_store.save(state)
-            except BinanceAPIError as exc:
-                record_api_error(errors_journal, notifier, loggers, settings.app_mode, "take-profit-close", symbol, exc)
+        try:
+            order_manager.close_position(symbol, close_decision.reason, state)
+            state_store.save(state)
+        except BinanceAPIError as exc:
+            record_api_error(
+                errors_journal,
+                notifier,
+                loggers,
+                settings.app_mode,
+                close_decision.error_scope or "position-close",
+                symbol,
+                exc,
+            )

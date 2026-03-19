@@ -7,3 +7,6 @@
 5. StateStore — источник истины по локальному состоянию.
 6. Любое изменение risk sizing, stop-loss, take-profit, daily loss limits — только вместе с тестами.
 7. APP_MODE=live не используется без явного подтверждения и предварительной проверки в demo.
+8. core/decisions.py содержит только pure decision logic без IO и внешних зависимостей.
+9. services/* содержит orchestration и execution flow, но не источник торговых решений.
+10. clients/, notify/ и journaling слои отвечают только за IO и не принимают торговых решений.

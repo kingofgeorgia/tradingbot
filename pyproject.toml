@@ -7,3 +7,6 @@ target-version = "py311"
 "tests/test_risk_manager.py" = ["E402"]
 "tests/test_order_manager.py" = ["E402"]
 "tests/test_state_store.py" = ["E402"]
+"tests/test_decisions.py" = ["E402"]
+"tests/test_position_monitor.py" = ["E402"]
+"tests/test_cycle.py" = ["E402"]

@@ -60,6 +60,9 @@ class FakeRiskManager:
         self.halt_reason = halt_reason
         self.calculate_calls: list[dict[str, object]] = []
         self.closed_trade_calls: list[tuple[float, str]] = []
+        self.can_open_calls: list[tuple[str, object, str]] = []
+        self.next_can_open: tuple[bool, str] = (True, "allowed")
+        self.refresh_calls: list[tuple[BotState, str, float]] = []
 
     def calculate_order_quantity(
         self,
@@ -91,15 +94,41 @@ class FakeRiskManager:
             state.halted_until_day = current_day
         return self.halt_reason
 
+    def can_open_position(self, symbol: str, state: BotState, current_day: str) -> tuple[bool, str]:
+        self.can_open_calls.append((symbol, state, current_day))
+        return self.next_can_open
+
+    def refresh_trading_day(self, state: BotState, current_day: str, current_equity: float) -> None:
+        self.refresh_calls.append((state, current_day, current_equity))
+        if state.trading_day == current_day:
+            return
+        state.trading_day = current_day
+        state.day_start_equity = current_equity
+        state.daily_realized_pnl = 0.0
+        state.consecutive_losses = 0
+        state.halted_until_day = None
+
 
 class FakeBinanceClient:
     def __init__(self) -> None:
         self.created_orders: list[tuple[str, str, float]] = []
         self.confirm_calls: list[tuple[str, int, int]] = []
         self.filters_by_symbol: dict[str, object] = {}
+        self.latest_prices: dict[str, float] = {}
+        self.klines_by_symbol: dict[str, object] = {}
         self.next_create_payload: dict[str, object] | None = None
         self.next_confirm_payload: dict[str, object] | None = None
         self.rounded_quantity: float | None = None
+        self.portfolio_value: float = 0.0
+        self.free_quote_balance: float = 0.0
+        self.raise_portfolio_error: Exception | None = None
+        self.raise_free_balance_error: Exception | None = None
+        self.latest_price_errors: dict[str, Exception] = {}
+        self.klines_errors: dict[str, Exception] = {}
+        self.portfolio_calls: list[tuple[list[str], str]] = []
+        self.balance_calls: list[str] = []
+        self.klines_calls: list[tuple[str, str, int]] = []
+        self.latest_price_calls: list[str] = []
 
     def create_market_order(self, symbol: str, side: str, quantity: float) -> dict[str, object]:
         self.created_orders.append((symbol, side, quantity))
@@ -127,6 +156,30 @@ class FakeBinanceClient:
 
     def get_symbol_filters(self, symbol: str):
         return self.filters_by_symbol[symbol]
+
+    def get_latest_price(self, symbol: str) -> float:
+        self.latest_price_calls.append(symbol)
+        if symbol in self.latest_price_errors:
+            raise self.latest_price_errors[symbol]
+        return self.latest_prices[symbol]
+
+    def get_portfolio_value(self, symbols: list[str], quote_asset: str) -> float:
+        self.portfolio_calls.append((symbols, quote_asset))
+        if self.raise_portfolio_error is not None:
+            raise self.raise_portfolio_error
+        return self.portfolio_value
+
+    def get_asset_free_balance(self, quote_asset: str) -> float:
+        self.balance_calls.append(quote_asset)
+        if self.raise_free_balance_error is not None:
+            raise self.raise_free_balance_error
+        return self.free_quote_balance
+
+    def get_klines(self, symbol: str, timeframe: str, candle_limit: int):
+        self.klines_calls.append((symbol, timeframe, candle_limit))
+        if symbol in self.klines_errors:
+            raise self.klines_errors[symbol]
+        return self.klines_by_symbol[symbol]
 
     def round_step_size(self, value: float, step_size: float) -> float:
         if self.rounded_quantity is not None:
