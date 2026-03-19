@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import time
-from decimal import Decimal, ROUND_DOWN
+from decimal import Decimal
 from typing import Any
 from urllib.parse import urlencode
 
@@ -11,6 +11,7 @@ import requests
 
 from binance_bot.config import Settings
 from binance_bot.core.models import Candle, SymbolFilters
+from binance_bot.core.rounding import round_down_to_step
 
 
 class BinanceAPIError(RuntimeError):
@@ -158,10 +159,7 @@ class BinanceSpotClient:
 
     @staticmethod
     def round_step_size(value: float, step_size: float) -> float:
-        if step_size <= 0:
-            return value
-        quantized = Decimal(str(value)).quantize(Decimal(str(step_size)), rounding=ROUND_DOWN)
-        return float(quantized)
+        return round_down_to_step(value, step_size)
 
     def _request(
         self,

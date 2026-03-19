@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_DOWN
-
 from binance_bot.config import Settings
 from binance_bot.core.models import BotState, SymbolFilters
+from binance_bot.core.rounding import round_down_to_step
 
 
 class RiskManager:
@@ -75,6 +74,4 @@ class RiskManager:
 
     @staticmethod
     def _round_down(value: float, step_size: float) -> float:
-        if step_size <= 0:
-            return value
-        return float(Decimal(str(value)).quantize(Decimal(str(step_size)), rounding=ROUND_DOWN))
+        return round_down_to_step(value, step_size)

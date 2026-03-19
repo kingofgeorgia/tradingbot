@@ -11,6 +11,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from binance_bot.config import Settings
+from binance_bot.clients.binance_client import BinanceSpotClient
 from binance_bot.core.models import BotState, Position, SymbolFilters
 from binance_bot.risk.manager import RiskManager
 
@@ -104,6 +105,14 @@ class RiskManagerTests(unittest.TestCase):
         self.assertEqual(state.daily_realized_pnl, 0.0)
         self.assertEqual(state.consecutive_losses, 0)
         self.assertIsNone(state.halted_until_day)
+
+    def test_round_down_uses_step_multiple_not_decimal_places(self) -> None:
+        self.assertEqual(self.manager._round_down(0.08, 0.03), 0.06)
+        self.assertEqual(self.manager._round_down(1.0, 0.03), 0.99)
+
+    def test_binance_client_round_step_size_uses_step_multiple(self) -> None:
+        self.assertEqual(BinanceSpotClient.round_step_size(12.3456, 0.05), 12.3)
+        self.assertEqual(BinanceSpotClient.round_step_size(0.08, 0.03), 0.06)
 
 
 if __name__ == "__main__":
