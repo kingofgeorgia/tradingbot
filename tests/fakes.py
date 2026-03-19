@@ -1,6 +1,3 @@
---- /dev/null
-+++ tests/fakes.py
-@@ -0,0 +1,162 @@
 +from __future__ import annotations
 +
 +from pathlib import Path
