@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 
 from binance_bot.clients.binance_client import BinanceSpotClient
@@ -11,6 +12,9 @@ from binance_bot.notify.telegram import TelegramNotifier
 from binance_bot.orders.manager import OrderManager
 from binance_bot.risk.manager import RiskManager
 from binance_bot.strategy.ema_cross import EmaCrossStrategy
+
+from binance_bot.services.cycle import process_cycle
+from binance_bot.services.error_handler import utc_now_iso
 
 
 @dataclass(slots=True)
@@ -31,6 +35,7 @@ class AppRuntime:
 def build_runtime() -> AppRuntime:
     settings = load_settings()
     ensure_runtime_directories(settings)
+
     loggers = configure_logging(settings.app_log_file, settings.error_log_file)
 
     signals_journal = CsvJournal(
@@ -39,7 +44,19 @@ def build_runtime() -> AppRuntime:
     )
     trades_journal = CsvJournal(
         settings.trades_journal_file,
-        ["timestamp_utc", "symbol", "side", "reason", "price", "quantity", "stop_loss", "take_profit", "fee_quote", "pnl_quote", "mode"],
+        [
+            "timestamp_utc",
+            "symbol",
+            "side",
+            "reason",
+            "price",
+            "quantity",
+            "stop_loss",
+            "take_profit",
+            "fee_quote",
+            "pnl_quote",
+            "mode",
+        ],
     )
     errors_journal = CsvJournal(
         settings.errors_journal_file,
@@ -49,6 +66,7 @@ def build_runtime() -> AppRuntime:
     notifier = TelegramNotifier(settings.telegram_bot_token, settings.telegram_chat_id, loggers.error)
     client = BinanceSpotClient(settings)
     state_store = StateStore(settings.state_file)
+
     strategy = EmaCrossStrategy(
         fast_period=settings.fast_ema_period,
         slow_period=settings.slow_ema_period,
@@ -66,6 +84,7 @@ def build_runtime() -> AppRuntime:
         signals_journal=signals_journal,
         trades_journal=trades_journal,
     )
+
     client.sync_time()
 
     return AppRuntime(
@@ -81,3 +100,51 @@ def build_runtime() -> AppRuntime:
         risk_manager=risk_manager,
         order_manager=order_manager,
     )
+
+
+def run_loop(runtime: AppRuntime) -> None:
+    runtime.loggers.app.info(
+        "Bot started in %s mode for symbols: %s",
+        runtime.settings.app_mode,
+        ", ".join(runtime.settings.symbols),
+    )
+    runtime.notifier.send(
+        f"[{runtime.settings.app_mode}] Bot started for symbols: {', '.join(runtime.settings.symbols)}"
+    )
+
+    while True:
+        state = runtime.state_store.load()
+
+        try:
+            process_cycle(
+                settings=runtime.settings,
+                client=runtime.client,
+                state=state,
+                state_store=runtime.state_store,
+                strategy=runtime.strategy,
+                risk_manager=runtime.risk_manager,
+                order_manager=runtime.order_manager,
+                errors_journal=runtime.errors_journal,
+                notifier=runtime.notifier,
+                loggers=runtime.loggers,
+            )
+        except Exception as exc:
+            runtime.loggers.error.error("Fatal error in trading loop: %s", exc, exc_info=True)
+            runtime.errors_journal.write(
+                {
+                    "timestamp_utc": utc_now_iso(),
+                    "scope": "main-loop",
+                    "symbol": "",
+                    "error_type": type(exc).__name__,
+                    "message": str(exc),
+                    "mode": runtime.settings.app_mode,
+                }
+            )
+            runtime.notifier.send(f"[{runtime.settings.app_mode}] Fatal bot error: {exc}")
+            raise
+
+        if runtime.settings.run_once:
+            runtime.loggers.app.info("RUN_ONCE enabled, stopping after one cycle.")
+            break
+
+        time.sleep(runtime.settings.loop_interval_seconds)
