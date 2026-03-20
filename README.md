@@ -19,6 +19,7 @@
 - Настраиваемые heartbeat/summary notifications по runtime health и blocked symbols.
 - Cooldown policy для повторяющихся startup/runtime alerts, чтобы persistent проблемы не спамили operator channel каждый цикл.
 - `inspect --json` для машиночитаемого runtime status с устойчивым набором top-level keys и per-symbol status payload.
+- Отдельный regression test на стабильность JSON-ключей для `inspect --json`, чтобы machine-readable contract не дрейфовал незаметно.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
 - Явная runtime error policy: warning/runtime-io ошибки журналируются без operator alert, а execution/fatal ошибки получают реакцию и уведомление.
@@ -222,7 +223,7 @@ python -m pytest -q
 python -m ruff check .
 ```
 
-CI в GitHub Actions использует Python 3.11, отдельно гоняет core tests, service-layer smoke и regression-проверки sample state fixtures.
+CI в GitHub Actions использует Python 3.11, отдельно гоняет core tests, service-layer smoke, regression-проверки sample state fixtures и стабильность `inspect --json` payload.
 
 ## GitHub Actions
 

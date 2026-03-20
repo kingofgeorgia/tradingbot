@@ -119,8 +119,8 @@
 	target: 2026-03-20
 - `NEXT-11` Добавить тест на JSON-формат статуса и стабильность ключей ответа.
 	owner: copilot
-	status: todo
-	target: 2026-04-22
+	status: done
+	target: 2026-03-20
 - `NEXT-12` Добавить end-to-end smoke test для режима `startup-check-only`.
 	owner: copilot
 	status: todo

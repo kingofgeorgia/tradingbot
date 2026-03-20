@@ -176,6 +176,7 @@ Policy note:
 - [tests/test_reconciliation.py](../tests/test_reconciliation.py) — тесты startup reconciliation и mismatch handling. Ключевые сущности: `FakeOrderManager`, `FakeStrategy`, `ReconciliationTests`.
 - [tests/test_repair.py](../tests/test_repair.py) — тесты operator repair flow. Ключевые сущности: `FakeOrderManager`, `RepairFlowTests`.
 - [tests/test_status.py](../tests/test_status.py) — тесты operator status report. Ключевая сущность: `StatusTests`.
+- [tests/test_status_json_format.py](../tests/test_status_json_format.py) — regression-тест на стабильность top-level и per-symbol JSON keys для `inspect --json`. Ключевая сущность: `StatusJsonFormatTests`.
 - [tests/test_state_fixtures.py](../tests/test_state_fixtures.py) — regression fixtures для state compatibility. Ключевая сущность: `StateFixturesTests`.
 
 Навигация: [к модулю](#modules) | [к operator flow](#operator-flow) | [к содержанию](#содержание)
