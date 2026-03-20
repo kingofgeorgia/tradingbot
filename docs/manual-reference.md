@@ -146,6 +146,7 @@ Policy note:
 - `inspect --json` возвращает стабильный top-level payload: `runtime_mode`, `open_positions`, `blocked_symbols`, `suspect_positions`, `startup_issue_keys`, `symbol_statuses`, `last_reconciled_at`, `last_reconciliation_status`, `last_manual_review_at`.
 - `startup-check-only` smoke теперь прогоняется как subprocess path: reconciliation выполняется, startup summary отправляется, trading loop не стартует.
 - `observe-only` smoke теперь прогоняется как subprocess path с `RUN_ONCE`: reconciliation и один runtime cycle выполняются, signal logging остается активным, но execution не происходит.
+- `no-new-entries` smoke теперь прогоняется как subprocess path с `RUN_ONCE`: reconciliation и один runtime cycle выполняются, BUY signals логируются, но новые позиции не открываются.
 
 Навигация: [к модулю](#modules) | [к тестам](#tests) | [к содержанию](#содержание)
 

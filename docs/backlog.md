@@ -131,8 +131,8 @@
 	target: 2026-03-20
 - `NEXT-14` Добавить end-to-end smoke test для режима `no-new-entries`.
 	owner: copilot
-	status: todo
-	target: 2026-04-24
+	status: done
+	target: 2026-03-20
 - `NEXT-15` Прогнать testnet-сценарий `local position missing on exchange` и записать фактический результат.
 	owner: user
 	status: blocked

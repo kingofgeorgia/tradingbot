@@ -89,3 +89,21 @@ class CliSmokeTests(unittest.TestCase):
         self.assertEqual(len(payload["notifier_messages"]), 2)
         self.assertIn("Startup summary", payload["notifier_messages"][0])
         self.assertIn("Runtime mode: observe-only", payload["notifier_messages"][1])
+
+    def test_no_new_entries_mode_smoke(self) -> None:
+        result = self.run_smoke("runtime-no-new-entries")
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["runtime_mode"], "no-new-entries")
+        self.assertEqual(payload["logged_signals"], ["BTCUSDT"])
+        self.assertEqual(payload["close_calls"], [])
+        self.assertEqual(payload["open_calls"], [])
+        self.assertEqual(payload["open_positions"], [])
+        self.assertEqual(
+            payload["last_processed_candle"],
+            {"BTCUSDT": 1710000000000, "ETHUSDT": 1710000005000},
+        )
+        self.assertEqual(len(payload["notifier_messages"]), 2)
+        self.assertIn("Startup summary", payload["notifier_messages"][0])
+        self.assertIn("Runtime mode: no-new-entries", payload["notifier_messages"][1])

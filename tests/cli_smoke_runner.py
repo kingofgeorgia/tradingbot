@@ -249,6 +249,24 @@ def build_runtime_for_scenario(scenario: str, temp_dir: str) -> SimpleNamespace:
             has_recent_trades=True,
             step_size=0.001,
         )
+    elif scenario == "runtime-no-new-entries":
+        settings.runtime_mode = "no-new-entries"
+        state = BotState()
+        strategy.signals_by_symbol = {
+            "BTCUSDT": TradeSignal("BTCUSDT", "BUY", "ema20-crossed-above-ema50", 100.0, 101.0, 99.0, 1710000000000),
+            "ETHUSDT": TradeSignal("ETHUSDT", "HOLD", "no-crossover", 200.0, 201.0, 199.0, 1710000005000),
+        }
+        client.position_snapshots["BTCUSDT"] = ExchangePositionSnapshot(
+            symbol="BTCUSDT",
+            base_asset="BTC",
+            exchange_quantity=0.0,
+            average_entry_price=None,
+            last_order_id=None,
+            last_trade_time=None,
+            has_open_orders=False,
+            has_recent_trades=False,
+            step_size=0.001,
+        )
     else:
         raise ValueError(f"Unsupported smoke scenario: {scenario}")
 
@@ -287,6 +305,21 @@ def main() -> int:
             )
         )
     if scenario == "runtime-observe-only":
+        state = runtime.state_store.load()
+        print(
+            json.dumps(
+                {
+                    "runtime_mode": runtime.settings.runtime_mode,
+                    "logged_signals": [signal.symbol for signal in runtime.order_manager.logged_signals],
+                    "close_calls": list(runtime.order_manager.close_calls),
+                    "open_calls": list(runtime.order_manager.open_calls),
+                    "open_positions": sorted(state.open_positions.keys()),
+                    "last_processed_candle": dict(state.last_processed_candle),
+                    "notifier_messages": list(runtime.notifier.messages),
+                }
+            )
+        )
+    if scenario == "runtime-no-new-entries":
         state = runtime.state_store.load()
         print(
             json.dumps(
