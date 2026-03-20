@@ -10,7 +10,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from binance_bot.config import Settings
+from binance_bot.config import Settings, SymbolPolicyOverride
 from binance_bot.clients.binance_client import BinanceSpotClient
 from binance_bot.core.models import BotState, Position, SymbolFilters
 from binance_bot.risk.manager import RiskManager
@@ -40,11 +40,13 @@ def make_settings() -> Settings:
         daily_loss_limit_pct=0.03,
         max_consecutive_losses=3,
         loop_interval_seconds=30,
+        heartbeat_interval_cycles=0,
         order_confirm_timeout_seconds=15,
         request_timeout_seconds=15,
         stale_data_multiplier=2,
         quote_asset="USDT",
         run_once=True,
+        symbol_policy_overrides={},
         project_root=project_root,
         data_dir=project_root / "data",
         logs_dir=project_root / "logs",
@@ -58,12 +60,32 @@ class RiskManagerTests(unittest.TestCase):
     def test_calculate_order_quantity_uses_smallest_budget(self) -> None:
         filters = SymbolFilters(step_size=0.001, min_qty=0.001, min_notional=10.0, tick_size=0.01)
         quantity = self.manager.calculate_order_quantity(
+            symbol="BTCUSDT",
             entry_price=19.87,
             total_equity=1000.0,
             free_quote_balance=200.0,
             filters=filters,
         )
         self.assertAlmostEqual(quantity, 5.032, places=3)
+
+    def test_calculate_order_quantity_uses_symbol_override_budgets(self) -> None:
+        settings = make_settings()
+        settings.symbol_policy_overrides["BTCUSDT"] = SymbolPolicyOverride(
+            risk_per_trade_pct=0.02,
+            max_position_pct=0.05,
+        )
+        manager = RiskManager(settings)
+        filters = SymbolFilters(step_size=0.001, min_qty=0.001, min_notional=10.0, tick_size=0.01)
+
+        quantity = manager.calculate_order_quantity(
+            symbol="BTCUSDT",
+            entry_price=10.0,
+            total_equity=1000.0,
+            free_quote_balance=500.0,
+            filters=filters,
+        )
+
+        self.assertAlmostEqual(quantity, 5.0, places=3)
 
     def test_can_open_position_blocks_existing_symbol(self) -> None:
         state = BotState(

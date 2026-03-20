@@ -127,6 +127,7 @@ class OpenPositionUseCaseTests(unittest.TestCase):
         self.assertEqual(self.trades_journal.rows[0]["side"], "BUY")
         self.assertIn("Opened BUY BTCUSDT", self.notifier.messages[0])
         self.assertAlmostEqual(result.position.quantity, 0.25)
+        self.assertEqual(self.risk_manager.calculate_calls[0]["symbol"], "BTCUSDT")
 
 
 class ClosePositionUseCaseTests(unittest.TestCase):

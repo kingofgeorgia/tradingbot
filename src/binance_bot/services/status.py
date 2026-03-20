@@ -31,3 +31,18 @@ def format_status_report(report: RuntimeStatusReport) -> str:
         f"Last reconciliation status: {report.last_reconciliation_status or 'n/a'}\n"
         f"Last manual review at: {report.last_manual_review_at or 'n/a'}"
     )
+
+
+def format_runtime_health_notification(*, app_mode: str, report: RuntimeStatusReport, cycle_number: int) -> str:
+    blocked = ", ".join(sorted(report.blocked_symbols)) or "none"
+    positions = ", ".join(report.open_positions) or "none"
+    issues = ", ".join(report.startup_issue_keys) or "none"
+    return (
+        f"[{app_mode}] Runtime heartbeat\n"
+        f"Cycle: {cycle_number}\n"
+        f"Runtime mode: {report.runtime_mode}\n"
+        f"Open positions: {positions}\n"
+        f"Blocked symbols: {blocked}\n"
+        f"Startup issues: {issues}\n"
+        f"Last reconciliation status: {report.last_reconciliation_status or 'n/a'}"
+    )

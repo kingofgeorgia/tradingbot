@@ -47,6 +47,7 @@ class OpenPositionUseCase:
         free_quote_balance: float,
     ) -> OpenPositionResult:
         quantity = self._risk_manager.calculate_order_quantity(
+            symbol=signal.symbol,
             entry_price=signal.price,
             total_equity=total_equity,
             free_quote_balance=free_quote_balance,

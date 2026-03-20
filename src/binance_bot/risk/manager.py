@@ -31,14 +31,15 @@ class RiskManager:
 
     def calculate_order_quantity(
         self,
+        symbol: str,
         entry_price: float,
         total_equity: float,
         free_quote_balance: float,
         filters: SymbolFilters,
     ) -> float:
-        risk_budget = total_equity * self._settings.risk_per_trade_pct
+        risk_budget = total_equity * self._settings.get_symbol_risk_per_trade_pct(symbol)
         max_notional_by_risk = risk_budget / self._settings.stop_loss_pct
-        max_notional_by_balance = total_equity * self._settings.max_position_pct
+        max_notional_by_balance = total_equity * self._settings.get_symbol_max_position_pct(symbol)
         available_quote_budget = free_quote_balance * 0.98
         trade_notional = min(max_notional_by_risk, max_notional_by_balance, available_quote_budget)
 

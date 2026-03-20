@@ -10,6 +10,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from binance_bot.clients.binance_client import BinanceAPIError
+from binance_bot.config import SymbolPolicyOverride
 from binance_bot.core.models import BotState, Position
 from binance_bot.services.position_monitor import manage_open_positions
 from tests.fakes import FakeBinanceClient, FakeJournal, FakeLoggers, FakeNotifier, FakeStateStore, make_settings
@@ -218,6 +219,37 @@ class PositionMonitorTests(unittest.TestCase):
         )
 
         self.assertEqual(self.order_manager.close_calls, [])
+
+    def test_symbol_override_observe_only_skips_auto_close_for_one_symbol(self) -> None:
+        self.settings.symbol_policy_overrides["BTCUSDT"] = SymbolPolicyOverride(runtime_mode="observe-only")
+        self.state.open_positions["ETHUSDT"] = Position(
+            symbol="ETHUSDT",
+            quantity=0.5,
+            entry_price=200.0,
+            stop_loss=195.0,
+            take_profit=210.0,
+            opened_at="2026-03-19T12:05:00+00:00",
+            order_id=2,
+            mode="demo",
+            quote_spent=100.0,
+            fee_paid_quote=0.1,
+        )
+        self.client.latest_prices["BTCUSDT"] = 97.0
+        self.client.latest_prices["ETHUSDT"] = 194.0
+
+        manage_open_positions(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            order_manager=self.order_manager,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(len(self.order_manager.close_calls), 1)
+        self.assertEqual(self.order_manager.close_calls[0][0], "ETHUSDT")
 
 
 if __name__ == "__main__":

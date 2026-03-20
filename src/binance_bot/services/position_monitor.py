@@ -21,6 +21,10 @@ def manage_open_positions(
         return
 
     for symbol, position in list(state.open_positions.items()):
+        if settings.get_effective_symbol_runtime_mode(symbol) == "observe-only":
+            loggers.app.info("Skipping position monitor for %s because effective_runtime_mode=observe-only", symbol)
+            continue
+
         if symbol in state.suspect_positions:
             loggers.app.info("Skipping suspect position for %s: %s", symbol, state.suspect_positions[symbol])
             continue

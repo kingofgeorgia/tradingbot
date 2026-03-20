@@ -23,6 +23,7 @@ class TradeRiskManager(Protocol):
     def calculate_order_quantity(
         self,
         *,
+        symbol: str,
         entry_price: float,
         total_equity: float,
         free_quote_balance: float,

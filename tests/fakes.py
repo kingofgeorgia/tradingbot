@@ -71,6 +71,7 @@ class FakeRiskManager:
     def calculate_order_quantity(
         self,
         *,
+        symbol: str,
         entry_price: float,
         total_equity: float,
         free_quote_balance: float,
@@ -78,6 +79,7 @@ class FakeRiskManager:
     ) -> float:
         self.calculate_calls.append(
             {
+                "symbol": symbol,
                 "entry_price": entry_price,
                 "total_equity": total_equity,
                 "free_quote_balance": free_quote_balance,
@@ -250,11 +252,13 @@ def make_settings() -> Settings:
         daily_loss_limit_pct=0.03,
         max_consecutive_losses=3,
         loop_interval_seconds=30,
+        heartbeat_interval_cycles=0,
         order_confirm_timeout_seconds=15,
         request_timeout_seconds=15,
         stale_data_multiplier=2,
         quote_asset="USDT",
         run_once=True,
+        symbol_policy_overrides={},
         project_root=project_root,
         data_dir=project_root / "data",
         logs_dir=project_root / "logs",

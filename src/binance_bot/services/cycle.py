@@ -55,6 +55,8 @@ def process_cycle(
             loggers.app.info("Skipping %s: symbol blocked by startup reconciliation (%s)", symbol, block_reason)
             continue
 
+        symbol_runtime_mode = settings.get_effective_symbol_runtime_mode(symbol)
+
         try:
             candles = client.get_klines(symbol, settings.timeframe, settings.candle_limit)
             last_processed_candle = state.last_processed_candle.get(symbol)
@@ -82,6 +84,7 @@ def process_cycle(
             _handle_sell_signal(
                 symbol=symbol,
                 reason=signal_decision.reason,
+                symbol_runtime_mode=symbol_runtime_mode,
                 state=state,
                 state_store=state_store,
                 order_manager=order_manager,
@@ -98,6 +101,7 @@ def process_cycle(
         _handle_buy_signal(
             symbol=symbol,
             signal=signal,
+            symbol_runtime_mode=symbol_runtime_mode,
             state=state,
             current_day=current_day,
             total_equity=total_equity,
@@ -123,9 +127,21 @@ def _load_portfolio_snapshot(*, client, settings, errors_journal, notifier, logg
     return total_equity, free_quote_balance
 
 
-def _handle_sell_signal(*, symbol, reason, state, state_store, order_manager, settings, errors_journal, notifier, loggers) -> None:
-    if settings.runtime_mode == "observe-only":
-        loggers.app.info("Skipping SELL execution for %s because runtime_mode=observe-only", symbol)
+def _handle_sell_signal(
+    *,
+    symbol,
+    reason,
+    symbol_runtime_mode,
+    state,
+    state_store,
+    order_manager,
+    settings,
+    errors_journal,
+    notifier,
+    loggers,
+) -> None:
+    if symbol_runtime_mode == "observe-only":
+        loggers.app.info("Skipping SELL execution for %s because effective_runtime_mode=observe-only", symbol)
         return
 
     try:
@@ -140,6 +156,7 @@ def _handle_buy_signal(
     *,
     symbol,
     signal,
+    symbol_runtime_mode,
     state,
     current_day,
     total_equity,
@@ -153,11 +170,11 @@ def _handle_buy_signal(
     notifier,
     loggers,
 ) -> None:
-    if settings.runtime_mode == "observe-only":
-        loggers.app.info("Skipping BUY execution for %s because runtime_mode=observe-only", symbol)
+    if symbol_runtime_mode == "observe-only":
+        loggers.app.info("Skipping BUY execution for %s because effective_runtime_mode=observe-only", symbol)
         return
-    if settings.runtime_mode == "no-new-entries":
-        loggers.app.info("Skipping BUY execution for %s because runtime_mode=no-new-entries", symbol)
+    if symbol_runtime_mode == "no-new-entries":
+        loggers.app.info("Skipping BUY execution for %s because effective_runtime_mode=no-new-entries", symbol)
         return
 
     can_open, reason = risk_manager.can_open_position(symbol, state, current_day)

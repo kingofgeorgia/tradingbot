@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -10,6 +11,14 @@ from dotenv import load_dotenv
 
 AppMode = Literal["demo", "live"]
 RuntimeMode = Literal["trade", "startup-check-only", "observe-only", "no-new-entries"]
+SymbolRuntimeMode = Literal["trade", "observe-only", "no-new-entries"]
+
+
+@dataclass(frozen=True, slots=True)
+class SymbolPolicyOverride:
+    runtime_mode: SymbolRuntimeMode | None = None
+    risk_per_trade_pct: float | None = None
+    max_position_pct: float | None = None
 
 
 @dataclass(slots=True)
@@ -35,11 +44,13 @@ class Settings:
     daily_loss_limit_pct: float
     max_consecutive_losses: int
     loop_interval_seconds: int
+    heartbeat_interval_cycles: int
     order_confirm_timeout_seconds: int
     request_timeout_seconds: int
     stale_data_multiplier: int
     quote_asset: str
     run_once: bool
+    symbol_policy_overrides: dict[str, SymbolPolicyOverride]
     project_root: Path = field(repr=False)
     data_dir: Path = field(repr=False)
     logs_dir: Path = field(repr=False)
@@ -86,6 +97,25 @@ class Settings:
     def error_log_file(self) -> Path:
         return self.logs_dir / "errors.log"
 
+    def get_symbol_policy_override(self, symbol: str) -> SymbolPolicyOverride | None:
+        return self.symbol_policy_overrides.get(symbol.upper())
+
+    def get_effective_symbol_runtime_mode(self, symbol: str) -> RuntimeMode:
+        override = self.get_symbol_policy_override(symbol)
+        return _merge_runtime_modes(self.runtime_mode, override.runtime_mode if override else None)
+
+    def get_symbol_risk_per_trade_pct(self, symbol: str) -> float:
+        override = self.get_symbol_policy_override(symbol)
+        if override and override.risk_per_trade_pct is not None:
+            return override.risk_per_trade_pct
+        return self.risk_per_trade_pct
+
+    def get_symbol_max_position_pct(self, symbol: str) -> float:
+        override = self.get_symbol_policy_override(symbol)
+        if override and override.max_position_pct is not None:
+            return override.max_position_pct
+        return self.max_position_pct
+
 
 def load_settings() -> Settings:
     project_root = Path(__file__).resolve().parents[2]
@@ -125,11 +155,16 @@ def load_settings() -> Settings:
         daily_loss_limit_pct=float(os.getenv("DAILY_LOSS_LIMIT_PCT", "0.03")),
         max_consecutive_losses=int(os.getenv("MAX_CONSECUTIVE_LOSSES", "3")),
         loop_interval_seconds=int(os.getenv("LOOP_INTERVAL_SECONDS", "30")),
+        heartbeat_interval_cycles=int(os.getenv("HEARTBEAT_INTERVAL_CYCLES", "0")),
         order_confirm_timeout_seconds=int(os.getenv("ORDER_CONFIRM_TIMEOUT_SECONDS", "15")),
         request_timeout_seconds=int(os.getenv("REQUEST_TIMEOUT_SECONDS", "15")),
         stale_data_multiplier=int(os.getenv("STALE_DATA_MULTIPLIER", "2")),
         quote_asset=os.getenv("QUOTE_ASSET", "USDT").strip().upper(),
         run_once=os.getenv("RUN_ONCE", "false").strip().lower() == "true",
+        symbol_policy_overrides=_load_symbol_policy_overrides(
+            os.getenv("SYMBOL_POLICY_OVERRIDES"),
+            symbols=symbols,
+        ),
         project_root=project_root,
         data_dir=project_root / "data",
         logs_dir=project_root / "logs",
@@ -146,3 +181,81 @@ def ensure_runtime_directories(settings: Settings) -> None:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     settings.state_backups_dir.mkdir(parents=True, exist_ok=True)
     settings.logs_dir.mkdir(parents=True, exist_ok=True)
+
+
+def _load_symbol_policy_overrides(
+    raw_value: str | None,
+    *,
+    symbols: list[str],
+) -> dict[str, SymbolPolicyOverride]:
+    if raw_value is None or not raw_value.strip():
+        return {}
+
+    try:
+        payload = json.loads(raw_value)
+    except json.JSONDecodeError as exc:
+        raise ValueError("SYMBOL_POLICY_OVERRIDES must be a valid JSON object.") from exc
+
+    if not isinstance(payload, dict):
+        raise ValueError("SYMBOL_POLICY_OVERRIDES must be a JSON object keyed by symbol.")
+
+    configured_symbols = set(symbols)
+    overrides: dict[str, SymbolPolicyOverride] = {}
+    for raw_symbol, raw_override in payload.items():
+        symbol = str(raw_symbol).strip().upper()
+        if symbol not in configured_symbols:
+            raise ValueError(f"SYMBOL_POLICY_OVERRIDES contains unknown symbol: {symbol}.")
+        if not isinstance(raw_override, dict):
+            raise ValueError(f"SYMBOL_POLICY_OVERRIDES[{symbol}] must be a JSON object.")
+
+        unsupported_fields = set(raw_override) - {"runtime_mode", "risk_per_trade_pct", "max_position_pct"}
+        if unsupported_fields:
+            fields = ", ".join(sorted(unsupported_fields))
+            raise ValueError(f"SYMBOL_POLICY_OVERRIDES[{symbol}] contains unsupported fields: {fields}.")
+
+        runtime_override = _parse_symbol_runtime_mode(raw_override.get("runtime_mode"), symbol=symbol)
+        risk_per_trade_pct = _parse_pct_override(raw_override.get("risk_per_trade_pct"), field_name="risk_per_trade_pct", symbol=symbol)
+        max_position_pct = _parse_pct_override(raw_override.get("max_position_pct"), field_name="max_position_pct", symbol=symbol)
+        overrides[symbol] = SymbolPolicyOverride(
+            runtime_mode=runtime_override,
+            risk_per_trade_pct=risk_per_trade_pct,
+            max_position_pct=max_position_pct,
+        )
+
+    return overrides
+
+
+def _parse_symbol_runtime_mode(raw_value: object, *, symbol: str) -> SymbolRuntimeMode | None:
+    if raw_value is None:
+        return None
+    runtime_mode = str(raw_value).strip().lower()
+    if runtime_mode not in {"trade", "observe-only", "no-new-entries"}:
+        raise ValueError(
+            f"SYMBOL_POLICY_OVERRIDES[{symbol}].runtime_mode must be one of: trade, observe-only, no-new-entries."
+        )
+    return runtime_mode
+
+
+def _parse_pct_override(raw_value: object, *, field_name: str, symbol: str) -> float | None:
+    if raw_value is None:
+        return None
+    value = float(raw_value)
+    if value <= 0 or value > 1:
+        raise ValueError(f"SYMBOL_POLICY_OVERRIDES[{symbol}].{field_name} must be > 0 and <= 1.")
+    return value
+
+
+def _merge_runtime_modes(global_mode: RuntimeMode, symbol_override: SymbolRuntimeMode | None) -> RuntimeMode:
+    if symbol_override is None:
+        return global_mode
+
+    priority = {
+        "trade": 0,
+        "no-new-entries": 1,
+        "observe-only": 2,
+        "startup-check-only": 3,
+    }
+    effective_mode = global_mode
+    if priority[symbol_override] > priority[global_mode]:
+        effective_mode = symbol_override
+    return effective_mode

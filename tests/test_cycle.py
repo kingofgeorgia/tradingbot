@@ -10,6 +10,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from binance_bot.clients.binance_client import BinanceAPIError
+from binance_bot.config import SymbolPolicyOverride
 from binance_bot.core.models import BotState, Position, SymbolFilters
 from binance_bot.strategy.ema_cross import TradeSignal
 from binance_bot.services.cycle import process_cycle
@@ -326,6 +327,29 @@ class CycleTests(unittest.TestCase):
         )
 
         self.assertEqual(self.order_manager.open_calls, [])
+
+    def test_symbol_override_no_new_entries_skips_buy_for_one_symbol_only(self) -> None:
+        self.settings.symbol_policy_overrides["BTCUSDT"] = SymbolPolicyOverride(runtime_mode="no-new-entries")
+        self.strategy.signals_by_symbol = {
+            "BTCUSDT": TradeSignal("BTCUSDT", "BUY", "ema20-crossed-above-ema50", 100.0, 101.0, 99.0, 1710000000000),
+            "ETHUSDT": TradeSignal("ETHUSDT", "BUY", "ema20-crossed-above-ema50", 200.0, 201.0, 199.0, 1710000005000),
+        }
+
+        process_cycle(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            strategy=self.strategy,
+            risk_manager=self.risk_manager,
+            order_manager=self.order_manager,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(len(self.order_manager.open_calls), 1)
+        self.assertEqual(self.order_manager.open_calls[0][0].symbol, "ETHUSDT")
 
     def test_observe_only_mode_skips_sell_execution(self) -> None:
         self.settings.runtime_mode = "observe-only"

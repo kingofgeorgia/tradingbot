@@ -16,7 +16,7 @@ from binance_bot.strategy.ema_cross import EmaCrossStrategy
 from binance_bot.services.cycle import process_cycle
 from binance_bot.services.error_handler import utc_now_iso
 from binance_bot.services.reconciliation import apply_reconciliation_result, reconcile_runtime_state
-from binance_bot.services.status import build_runtime_status_report, format_status_report
+from binance_bot.services.status import build_runtime_status_report, format_runtime_health_notification, format_status_report
 
 
 @dataclass(slots=True)
@@ -157,6 +157,8 @@ def run_loop(runtime: AppRuntime) -> None:
         f"Runtime mode: {runtime.settings.runtime_mode}"
     )
 
+    cycle_number = 0
+
     while True:
         state = runtime.state_store.load()
 
@@ -189,12 +191,23 @@ def run_loop(runtime: AppRuntime) -> None:
             raise
 
         current_state = runtime.state_store.load()
+        cycle_number += 1
         runtime.loggers.app.info(
             "Cycle summary | open_positions=%s blocked_symbols=%s startup_issues=%s",
             len(current_state.open_positions),
             len(current_state.blocked_symbols),
             len(current_state.startup_issues),
         )
+
+        if runtime.settings.heartbeat_interval_cycles > 0 and cycle_number % runtime.settings.heartbeat_interval_cycles == 0:
+            report = build_runtime_status_report(settings=runtime.settings, state=current_state)
+            runtime.notifier.send(
+                format_runtime_health_notification(
+                    app_mode=runtime.settings.app_mode,
+                    report=report,
+                    cycle_number=cycle_number,
+                )
+            )
 
         if runtime.settings.run_once:
             runtime.loggers.app.info("RUN_ONCE enabled, stopping after one cycle.")

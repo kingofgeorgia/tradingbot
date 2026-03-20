@@ -64,7 +64,7 @@
 
 ### Config Layer
 
-- [src/binance_bot/config.py](../src/binance_bot/config.py) — загрузка `.env`, валидация настроек, пути к state/journals/logs/backups. Ключевые сущности: `AppMode`, `RuntimeMode`, `Settings`, `load_settings()`, `ensure_runtime_directories(...)`.
+- [src/binance_bot/config.py](../src/binance_bot/config.py) — загрузка `.env`, валидация настроек, пути к state/journals/logs/backups, heartbeat cadence и per-symbol policy overrides. Ключевые сущности: `AppMode`, `RuntimeMode`, `SymbolPolicyOverride`, `Settings`, `load_settings()`, `ensure_runtime_directories(...)`.
 
 ### Client Layer
 
@@ -87,7 +87,7 @@
 
 ### Risk Layer
 
-- [src/binance_bot/risk/manager.py](../src/binance_bot/risk/manager.py) — risk rules, sizing и daily halt logic. Ключевые сущности: `RiskManager`, `refresh_trading_day(...)`, `can_open_position(...)`, `calculate_order_quantity(...)`, `register_closed_trade(...)`.
+- [src/binance_bot/risk/manager.py](../src/binance_bot/risk/manager.py) — risk rules, sizing, daily halt logic и применение per-symbol sizing overrides. Ключевые сущности: `RiskManager`, `refresh_trading_day(...)`, `can_open_position(...)`, `calculate_order_quantity(...)`, `register_closed_trade(...)`.
 
 ### Orders Layer
 
@@ -104,9 +104,9 @@
 
 ### Service Layer
 
-- [src/binance_bot/services/runtime.py](../src/binance_bot/services/runtime.py) — composition root и lifecycle loop. Ключевые сущности: `AppRuntime`, `build_runtime()`, `reconcile_startup(...)`, `run_loop(...)`.
-- [src/binance_bot/services/cycle.py](../src/binance_bot/services/cycle.py) — orchestration одного торгового цикла. Ключевые сущности: `process_cycle(...)`, `_load_portfolio_snapshot(...)`, `_handle_sell_signal(...)`, `_handle_buy_signal(...)`, `_notify_halt_reason(...)`.
-- [src/binance_bot/services/position_monitor.py](../src/binance_bot/services/position_monitor.py) — управление уже открытыми позициями. Ключевая сущность: `manage_open_positions(...)`.
+- [src/binance_bot/services/runtime.py](../src/binance_bot/services/runtime.py) — composition root, lifecycle loop и runtime heartbeat notifications. Ключевые сущности: `AppRuntime`, `build_runtime()`, `reconcile_startup(...)`, `run_loop(...)`.
+- [src/binance_bot/services/cycle.py](../src/binance_bot/services/cycle.py) — orchestration одного торгового цикла с effective per-symbol runtime policy для BUY/SELL execution. Ключевые сущности: `process_cycle(...)`, `_load_portfolio_snapshot(...)`, `_handle_sell_signal(...)`, `_handle_buy_signal(...)`, `_notify_halt_reason(...)`.
+- [src/binance_bot/services/position_monitor.py](../src/binance_bot/services/position_monitor.py) — управление уже открытыми позициями с учетом per-symbol `observe-only` override. Ключевая сущность: `manage_open_positions(...)`.
 - [src/binance_bot/services/error_handler.py](../src/binance_bot/services/error_handler.py) — единая запись runtime/API ошибок. Ключевые сущности: `utc_now_iso()`, `record_api_error(...)`.
 
 Навигация: [к operator flow](#operator-flow) | [к тестам](#tests) | [к содержанию](#содержание)
@@ -122,7 +122,7 @@
 
 - [src/binance_bot/services/reconciliation.py](../src/binance_bot/services/reconciliation.py) — startup reconciliation и блокировка mismatch scenarios. Ключевые сущности: `load_exchange_snapshot(...)`, `reconcile_symbol_state(...)`, `reconcile_runtime_state(...)`, `apply_reconciliation_result(...)`.
 - [src/binance_bot/services/repair.py](../src/binance_bot/services/repair.py) — manual repair и unblock flow. Ключевые сущности: `inspect_runtime_issues(...)`, `acknowledge_issue(...)`, `repair_symbol_state(...)`, `unblock_symbol(...)`, `_backup_state_before_manual_action(...)`.
-- [src/binance_bot/services/status.py](../src/binance_bot/services/status.py) — status summary для `inspect`. Ключевые сущности: `build_runtime_status_report(...)`, `format_status_report(...)`.
+- [src/binance_bot/services/status.py](../src/binance_bot/services/status.py) — status summary для `inspect` и heartbeat notifications. Ключевые сущности: `build_runtime_status_report(...)`, `format_status_report(...)`, `format_runtime_health_notification(...)`.
 - [docs/architecture/operator-playbook.md](./architecture/operator-playbook.md) — playbook для ручной работы с проблемными символами.
 
 Порядок работы:
@@ -131,6 +131,10 @@
 3. Выполнить `repair` с разрешенным действием.
 4. После выравнивания state выполнить `unblock`.
 5. Повторно проверить статус через `inspect`.
+
+Policy note:
+- `SYMBOL_POLICY_OVERRIDES` принимает JSON-объект по символам, например `{"BTCUSDT":{"runtime_mode":"observe-only","risk_per_trade_pct":0.02,"max_position_pct":0.05}}`.
+- Per-symbol `runtime_mode` не может ослабить глобальный `RUNTIME_MODE`; effective mode для символа всегда выбирается как более строгий из двух.
 
 Навигация: [к модулю](#modules) | [к тестам](#tests) | [к содержанию](#содержание)
 

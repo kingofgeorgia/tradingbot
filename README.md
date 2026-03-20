@@ -13,6 +13,8 @@
 - Локальный `stop-loss` и `take-profit`.
 - Безопасный startup reconciliation перед торговым циклом: восстановление recoverable-позиций и блокировка mismatch-сценариев.
 - Operator workflow для `inspect`, `acknowledge`, `repair` и `unblock` по проблемным символам.
+- Настраиваемые heartbeat/summary notifications по runtime health и blocked symbols.
+- Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Ограничения риска: лимит риска на сделку, размер позиции, число одновременно открытых позиций, дневной лимит убытка и блокировка после серии убытков.
 - Логи в консоль и файлы, CSV-журналы сигналов, сделок, ошибок, reconciliation и repair-history.
 - Telegram-уведомления о старте, сделках, API-ошибках, startup mismatch и recovery-сценариях.
@@ -89,6 +91,8 @@ python main.py unblock BTCUSDT
 - `RUNTIME_MODE=observe-only` — без исполнения BUY/SELL и без auto-close через monitor.
 - `RUNTIME_MODE=no-new-entries` — без новых BUY, но с обычной обработкой остального runtime.
 
+Для отдельных символов можно задать более строгий effective runtime mode через `SYMBOL_POLICY_OVERRIDES`. Per-symbol override не ослабляет глобальный `RUNTIME_MODE`, а только делает его строже для конкретного symbol.
+
 ## Быстрый старт
 
 1. Установите Python 3.11+.
@@ -151,11 +155,25 @@ RUN_ONCE=false
 - `DAILY_LOSS_LIMIT_PCT`
 - `MAX_CONSECUTIVE_LOSSES`
 - `LOOP_INTERVAL_SECONDS`
+- `HEARTBEAT_INTERVAL_CYCLES`
 - `ORDER_CONFIRM_TIMEOUT_SECONDS`
 - `REQUEST_TIMEOUT_SECONDS`
 - `STALE_DATA_MULTIPLIER`
 - `QUOTE_ASSET`
 - `RUNTIME_MODE`
+- `SYMBOL_POLICY_OVERRIDES`
+
+Пример `SYMBOL_POLICY_OVERRIDES`:
+
+```env
+SYMBOL_POLICY_OVERRIDES={"BTCUSDT":{"runtime_mode":"observe-only","risk_per_trade_pct":0.02,"max_position_pct":0.05},"ETHUSDT":{"runtime_mode":"no-new-entries"}}
+```
+
+Поддерживаемые per-symbol поля:
+
+- `runtime_mode`: `trade`, `observe-only`, `no-new-entries`
+- `risk_per_trade_pct`: число `> 0` и `<= 1`
+- `max_position_pct`: число `> 0` и `<= 1`
 
 ## Запуск
 
