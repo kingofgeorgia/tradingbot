@@ -21,6 +21,7 @@
 - `inspect --json` для машиночитаемого runtime status с устойчивым набором top-level keys и per-symbol status payload.
 - Отдельный regression test на стабильность JSON-ключей для `inspect --json`, чтобы machine-readable contract не дрейфовал незаметно.
 - End-to-end subprocess smoke для `RUNTIME_MODE=startup-check-only`, чтобы bootstrap path проверялся не только unit-тестами.
+- End-to-end subprocess smoke для `RUNTIME_MODE=observe-only`, чтобы runtime loop подтверждал отсутствие execution при сохранении signal processing.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
 - Явная runtime error policy: warning/runtime-io ошибки журналируются без operator alert, а execution/fatal ошибки получают реакцию и уведомление.
@@ -224,7 +225,7 @@ python -m pytest -q
 python -m ruff check .
 ```
 
-CI в GitHub Actions использует Python 3.11, отдельно гоняет core tests, service-layer smoke, CLI/runtime smoke, regression-проверки sample state fixtures и стабильность `inspect --json` payload.
+CI в GitHub Actions использует Python 3.11, отдельно гоняет core tests, service-layer smoke, CLI/runtime smoke для startup/runtime modes, regression-проверки sample state fixtures и стабильность `inspect --json` payload.
 
 ## GitHub Actions
 

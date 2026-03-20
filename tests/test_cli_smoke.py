@@ -71,3 +71,21 @@ class CliSmokeTests(unittest.TestCase):
         self.assertEqual(payload["last_reconciliation_status"], "clean")
         self.assertEqual(len(payload["notifier_messages"]), 1)
         self.assertIn("Startup summary", payload["notifier_messages"][0])
+
+    def test_observe_only_mode_smoke(self) -> None:
+        result = self.run_smoke("runtime-observe-only")
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["runtime_mode"], "observe-only")
+        self.assertEqual(payload["logged_signals"], ["BTCUSDT"])
+        self.assertEqual(payload["close_calls"], [])
+        self.assertEqual(payload["open_calls"], [])
+        self.assertEqual(payload["open_positions"], ["BTCUSDT"])
+        self.assertEqual(
+            payload["last_processed_candle"],
+            {"BTCUSDT": 1710000000000, "ETHUSDT": 1710000005000},
+        )
+        self.assertEqual(len(payload["notifier_messages"]), 2)
+        self.assertIn("Startup summary", payload["notifier_messages"][0])
+        self.assertIn("Runtime mode: observe-only", payload["notifier_messages"][1])
