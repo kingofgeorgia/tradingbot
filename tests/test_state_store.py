@@ -54,6 +54,8 @@ class StateStoreTests(unittest.TestCase):
             )
 
             store.save(original_state)
+            payload = json.loads(state_file.read_text(encoding="utf-8"))
+            self.assertEqual(payload["schema_version"], 1)
             loaded_state = store.load()
 
             self.assertEqual(loaded_state.to_dict(), original_state.to_dict())
@@ -80,11 +82,30 @@ class StateStoreTests(unittest.TestCase):
 
             state = store.load()
 
+            self.assertEqual(state.schema_version, 1)
             self.assertEqual(state.blocked_symbols, {})
             self.assertEqual(state.suspect_positions, {})
             self.assertEqual(state.startup_issues, [])
             self.assertIsNone(state.last_reconciled_at)
             self.assertIsNone(state.last_reconciliation_status)
+
+    def test_load_rejects_future_schema_version(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            state_file = Path(tmp_dir) / "state.json"
+            state_file.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 999,
+                        "trading_day": "2026-03-19",
+                        "open_positions": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            store = StateStore(state_file)
+
+            with self.assertRaisesRegex(ValueError, "Unsupported state schema_version"):
+                store.load()
 
 
 if __name__ == "__main__":

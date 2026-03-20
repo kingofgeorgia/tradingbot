@@ -79,16 +79,16 @@
 
 - `NEXT-01` Ввести `schema_version` в state payload и backward-compatible migration path.
 	owner: copilot
-	status: todo
-	target: 2026-04-04
+	status: done
+	target: 2026-03-20
 - `NEXT-02` Добавить heartbeat/summary notifications по runtime health и blocked symbols.
 	owner: copilot
-	status: todo
-	target: 2026-04-06
+	status: done
+	target: 2026-03-20
 - `NEXT-03` Поддержать per-symbol overrides для risk/runtime policy.
 	owner: copilot
-	status: todo
-	target: 2026-04-08
+	status: done
+	target: 2026-03-20
 - `NEXT-04` Выделить exchange port поверх Binance client для более чистых service/use-case тестов.
 	owner: copilot
 	status: todo

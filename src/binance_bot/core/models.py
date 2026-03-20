@@ -4,6 +4,9 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 
+CURRENT_STATE_SCHEMA_VERSION = 1
+
+
 @dataclass(slots=True)
 class Candle:
     open_time: int
@@ -143,6 +146,7 @@ class RuntimeStatusReport:
 
 @dataclass(slots=True)
 class BotState:
+    schema_version: int = CURRENT_STATE_SCHEMA_VERSION
     trading_day: str = ""
     day_start_equity: float = 0.0
     daily_realized_pnl: float = 0.0
@@ -164,6 +168,7 @@ class BotState:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "schema_version": self.schema_version,
             "trading_day": self.trading_day,
             "day_start_equity": self.day_start_equity,
             "daily_realized_pnl": self.daily_realized_pnl,
@@ -201,6 +206,7 @@ class BotState:
             if isinstance(record_payload, dict)
         ]
         return cls(
+            schema_version=int(payload.get("schema_version", CURRENT_STATE_SCHEMA_VERSION)),
             trading_day=payload.get("trading_day", ""),
             day_start_equity=float(payload.get("day_start_equity", 0.0)),
             daily_realized_pnl=float(payload.get("daily_realized_pnl", 0.0)),

@@ -13,6 +13,7 @@
 - Локальный `stop-loss` и `take-profit`.
 - Безопасный startup reconciliation перед торговым циклом: восстановление recoverable-позиций и блокировка mismatch-сценариев.
 - Operator workflow для `inspect`, `acknowledge`, `repair` и `unblock` по проблемным символам.
+- Версионированный `state.json` с `schema_version` и backward-compatible migration path для локального runtime state.
 - Настраиваемые heartbeat/summary notifications по runtime health и blocked symbols.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Ограничения риска: лимит риска на сделку, размер позиции, число одновременно открытых позиций, дневной лимит убытка и блокировка после серии убытков.
@@ -38,6 +39,7 @@
 - `src/binance_bot/notify/telegram.py` — уведомления в Telegram.
 - `src/binance_bot/use_cases/` — application use-cases для открытия и закрытия позиций.
 - `src/binance_bot/core/` — модели, state store, логирование, CSV-журналы, pure decisions и helpers округления.
+- `data/state.json` — versioned persistent state payload с `schema_version` и migration boundary на загрузке.
 - `docs/architecture/` — архитектурные инварианты и overview проекта.
 - `docs/architecture/changelog.md` — хронология архитектурных фаз и ключевых изменений по этапам.
 - `docs/project-purpose.md` — подробное описание того, в чем главная суть проекта.

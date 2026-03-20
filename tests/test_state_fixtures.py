@@ -20,6 +20,7 @@ class StateFixturesTests(unittest.TestCase):
 
         state = BotState.from_dict(payload)
 
+        self.assertEqual(state.schema_version, 1)
         self.assertEqual(state.blocked_symbols, {})
         self.assertEqual(state.startup_issues, [])
         self.assertEqual(state.repair_history, [])
@@ -30,6 +31,7 @@ class StateFixturesTests(unittest.TestCase):
 
         state = BotState.from_dict(payload)
 
+        self.assertEqual(state.schema_version, 1)
         self.assertIn("BTCUSDT", state.blocked_symbols)
         self.assertEqual(state.startup_issues[0].issue_type, "quantity-mismatch")
         self.assertEqual(state.alerted_startup_issues, ["BTCUSDT:quantity-mismatch:block-symbol"])

@@ -75,8 +75,8 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 
 ### Core Layer
 
-- [src/binance_bot/core/models.py](../src/binance_bot/core/models.py) — domain models и persistent runtime state. Ключевые классы: `Candle`, `SymbolFilters`, `Position`, `ExchangePositionSnapshot`, `StartupIssue`, `SymbolRuntimeStatus`, `ReconciliationResult`, `RepairRecord`, `RuntimeStatusReport`, `BotState`.
-- [src/binance_bot/core/state.py](../src/binance_bot/core/state.py) — JSON persistence layer. Ключевые сущности: `StateStore`, `load()`, `save(state)`.
+- [src/binance_bot/core/models.py](../src/binance_bot/core/models.py) — domain models и persistent runtime state, включая `schema_version` в `BotState`. Ключевые классы: `Candle`, `SymbolFilters`, `Position`, `ExchangePositionSnapshot`, `StartupIssue`, `SymbolRuntimeStatus`, `ReconciliationResult`, `RepairRecord`, `RuntimeStatusReport`, `BotState`.
+- [src/binance_bot/core/state.py](../src/binance_bot/core/state.py) — JSON persistence layer с migration boundary по `schema_version`. Ключевые сущности: `StateStore`, `load()`, `save(state)`, `migrate_state_payload(...)`.
 - [src/binance_bot/core/journal.py](../src/binance_bot/core/journal.py) — append-only CSV journaling. Ключевые сущности: `CsvJournal`, `write(row)`.
 - [src/binance_bot/core/logging_setup.py](../src/binance_bot/core/logging_setup.py) — настройка логгеров. Ключевые сущности: `Loggers`, `configure_logging(...)`.
 - [src/binance_bot/core/errors.py](../src/binance_bot/core/errors.py) — классификация runtime errors. Ключевые сущности: `ErrorDescriptor`, `classify_runtime_error(...)`.

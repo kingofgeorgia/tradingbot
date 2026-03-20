@@ -1,4 +1,5 @@
 {
+  "schema_version": 1,
   "trading_day": "2026-03-20",
   "day_start_equity": 1000.0,
   "daily_realized_pnl": 0.0,
