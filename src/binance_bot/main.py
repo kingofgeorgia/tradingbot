@@ -21,15 +21,17 @@ def run(argv: list[str] | None = None) -> None:
 def _run_operator_command(runtime, arguments: list[str]) -> None:
     state = runtime.state_store.load()
     command = arguments[0]
+    command_arguments = [argument for argument in arguments[1:] if argument != "--dry-run"]
+    dry_run = "--dry-run" in arguments[1:]
 
     if command == "inspect":
-        as_json = len(arguments) >= 2 and arguments[1] == "--json"
+        as_json = "--json" in arguments[1:]
         print(inspect_runtime_issues(settings=runtime.settings, client=runtime.client, state=state, as_json=as_json))
         return
-    if command == "acknowledge" and len(arguments) >= 2:
+    if command == "acknowledge" and len(command_arguments) >= 1:
         print(
             acknowledge_issue(
-                symbol=arguments[1],
+                symbol=command_arguments[0],
                 state=state,
                 state_store=runtime.state_store,
                 repair_journal=runtime.repair_journal,
@@ -38,7 +40,7 @@ def _run_operator_command(runtime, arguments: list[str]) -> None:
             )
         )
         return
-    if command == "repair" and len(arguments) >= 3:
+    if command == "repair" and len(command_arguments) >= 2:
         print(
             repair_symbol_state(
                 settings=runtime.settings,
@@ -48,12 +50,13 @@ def _run_operator_command(runtime, arguments: list[str]) -> None:
                 order_manager=runtime.order_manager,
                 repair_journal=runtime.repair_journal,
                 loggers=runtime.loggers,
-                symbol=arguments[1],
-                action=arguments[2],
+                symbol=command_arguments[0],
+                action=command_arguments[1],
+                dry_run=dry_run,
             )
         )
         return
-    if command == "unblock" and len(arguments) >= 2:
+    if command == "unblock" and len(command_arguments) >= 1:
         print(
             unblock_symbol(
                 settings=runtime.settings,
@@ -62,12 +65,15 @@ def _run_operator_command(runtime, arguments: list[str]) -> None:
                 state_store=runtime.state_store,
                 repair_journal=runtime.repair_journal,
                 loggers=runtime.loggers,
-                symbol=arguments[1],
+                symbol=command_arguments[0],
+                dry_run=dry_run,
             )
         )
         return
 
-    print("Unsupported command. Use: inspect [--json] | acknowledge <SYMBOL> | repair <SYMBOL> <ACTION> | unblock <SYMBOL>")
+    print(
+        "Unsupported command. Use: inspect [--json] | acknowledge <SYMBOL> | repair <SYMBOL> <ACTION> [--dry-run] | unblock <SYMBOL> [--dry-run]"
+    )
 
 
 if __name__ == "__main__":

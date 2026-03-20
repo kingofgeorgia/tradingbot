@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from binance_bot.core.decisions import decide_issue_acknowledgement, decide_manual_repair_action, decide_unblock_allowed
-from binance_bot.core.models import RepairRecord
+from binance_bot.core.models import BotState, RepairRecord
 from binance_bot.services.error_handler import utc_now_iso
 from binance_bot.services.reconciliation import reconcile_runtime_state
 from binance_bot.services.status import build_runtime_status_report, format_status_report, format_status_report_json
@@ -46,7 +46,19 @@ def acknowledge_issue(*, symbol: str, state, state_store, repair_journal, logger
     return f"Acknowledged startup issue for {symbol}."
 
 
-def repair_symbol_state(*, settings, client, state, state_store, order_manager, repair_journal, loggers, symbol: str, action: str) -> str:
+def repair_symbol_state(
+    *,
+    settings,
+    client,
+    state,
+    state_store,
+    order_manager,
+    repair_journal,
+    loggers,
+    symbol: str,
+    action: str,
+    dry_run: bool = False,
+) -> str:
     issue = next((item for item in state.startup_issues if item.symbol == symbol), None)
     result = reconcile_runtime_state(settings=settings, client=client, state=state)
     snapshot = result.restored_snapshots.get(symbol)
@@ -58,6 +70,18 @@ def repair_symbol_state(*, settings, client, state, state_store, order_manager, 
     )
     if not decision.allowed:
         return f"{symbol}: {decision.reason}"
+
+    if dry_run:
+        dry_run_state = _clone_state(state)
+        if action == "restore-from-exchange":
+            order_manager.restore_position_from_exchange(snapshot, dry_run_state)
+            _resolve_issue_for_symbol(dry_run_state, symbol)
+        elif action == "drop-local-state":
+            order_manager.drop_local_position(symbol, dry_run_state)
+            _resolve_issue_for_symbol(dry_run_state, symbol)
+        elif action != "keep-blocked":
+            return f"{symbol}: unsupported repair action {action}"
+        return f"Dry-run: would apply manual repair for {symbol}: {action}."
 
     _backup_state_before_manual_action(settings=settings, state=state, symbol=symbol, action=action)
 
@@ -88,7 +112,7 @@ def repair_symbol_state(*, settings, client, state, state_store, order_manager, 
     return f"Applied manual repair for {symbol}: {action}."
 
 
-def unblock_symbol(*, settings, client, state, state_store, repair_journal, loggers, symbol: str) -> str:
+def unblock_symbol(*, settings, client, state, state_store, repair_journal, loggers, symbol: str, dry_run: bool = False) -> str:
     result = reconcile_runtime_state(settings=settings, client=client, state=state)
     has_open_issue = any(issue.symbol == symbol for issue in state.startup_issues)
     symbol_blocked = symbol in state.blocked_symbols
@@ -100,6 +124,13 @@ def unblock_symbol(*, settings, client, state, state_store, repair_journal, logg
     )
     if not decision.allowed:
         return f"{symbol}: {decision.reason}"
+
+    if dry_run:
+        dry_run_state = _clone_state(state)
+        dry_run_state.blocked_symbols.pop(symbol, None)
+        dry_run_state.suspect_positions.pop(symbol, None)
+        _resolve_issue_for_symbol(dry_run_state, symbol)
+        return f"Dry-run: would unblock {symbol}."
 
     _backup_state_before_manual_action(settings=settings, state=state, symbol=symbol, action="unblock")
 
@@ -166,3 +197,7 @@ def _backup_state_before_manual_action(*, settings, state, symbol: str, action: 
     timestamp = utc_now_iso().replace(":", "-")
     backup_file = settings.state_backups_dir / f"{timestamp}__{symbol}__{action}.json"
     backup_file.write_text(json.dumps(state.to_dict(), ensure_ascii=True, indent=2), encoding="utf-8")
+
+
+def _clone_state(state: BotState) -> BotState:
+    return BotState.from_dict(state.to_dict())

@@ -55,6 +55,8 @@ class FakeCliOrderManager:
         self.logged_signals: list[TradeSignal] = []
         self.open_calls: list[tuple[str, str]] = []
         self.close_calls: list[tuple[str, str]] = []
+        self.restore_calls: list[str] = []
+        self.drop_calls: list[str] = []
 
     def log_signal(self, signal: TradeSignal) -> None:
         self.logged_signals.append(signal)
@@ -66,6 +68,7 @@ class FakeCliOrderManager:
         self.close_calls.append((symbol, reason))
 
     def restore_position_from_exchange(self, snapshot: ExchangePositionSnapshot, state: BotState) -> None:
+        self.restore_calls.append(snapshot.symbol)
         state.open_positions[snapshot.symbol] = Position(
             symbol=snapshot.symbol,
             quantity=snapshot.exchange_quantity,
@@ -79,10 +82,10 @@ class FakeCliOrderManager:
             fee_paid_quote=0.0,
         )
 
-    @staticmethod
-    def drop_local_position(symbol: str, state: BotState) -> None:
+    def drop_local_position(self, symbol: str, state: BotState) -> None:
         state.open_positions.pop(symbol, None)
         state.suspect_positions.pop(symbol, None)
+        self.drop_calls.append(symbol)
 
     @staticmethod
     def mark_position_unrecoverable(symbol: str, reason: str, state: BotState) -> None:
@@ -123,7 +126,7 @@ def build_runtime_for_scenario(scenario: str, temp_dir: str) -> SimpleNamespace:
         step_size=0.001,
     )
 
-    if scenario in {"inspect", "acknowledge", "repair-restore", "unblock-open"}:
+    if scenario in {"inspect", "acknowledge", "repair-restore", "repair-restore-dry-run", "unblock-open"}:
         state = BotState(
             blocked_symbols={"BTCUSDT": "exchange-position-without-local-state"},
             startup_issues=[
@@ -189,7 +192,7 @@ def build_runtime_for_scenario(scenario: str, temp_dir: str) -> SimpleNamespace:
             has_recent_trades=False,
             step_size=0.001,
         )
-    elif scenario == "unblock-closed":
+    elif scenario in {"unblock-closed", "unblock-closed-dry-run"}:
         state = BotState(blocked_symbols={"BTCUSDT": "resolved-manually"})
         client.position_snapshots["BTCUSDT"] = ExchangePositionSnapshot(
             symbol="BTCUSDT",
@@ -301,6 +304,30 @@ def main() -> int:
                     "runtime_mode": runtime.settings.runtime_mode,
                     "last_reconciliation_status": state.last_reconciliation_status,
                     "notifier_messages": list(runtime.notifier.messages),
+                }
+            )
+        )
+    if scenario == "repair-restore-dry-run":
+        state = runtime.state_store.load()
+        print(
+            json.dumps(
+                {
+                    "open_positions": sorted(state.open_positions.keys()),
+                    "startup_issue_keys": [issue.issue_key for issue in state.startup_issues],
+                    "repair_rows": len(runtime.repair_journal.rows),
+                    "backups": len(list(runtime.settings.state_backups_dir.glob("*.json"))),
+                    "restore_calls": list(runtime.order_manager.restore_calls),
+                }
+            )
+        )
+    if scenario == "unblock-closed-dry-run":
+        state = runtime.state_store.load()
+        print(
+            json.dumps(
+                {
+                    "blocked_symbols": dict(state.blocked_symbols),
+                    "repair_rows": len(runtime.repair_journal.rows),
+                    "backups": len(list(runtime.settings.state_backups_dir.glob("*.json"))),
                 }
             )
         )

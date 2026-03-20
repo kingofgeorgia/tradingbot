@@ -23,6 +23,7 @@
 - End-to-end subprocess smoke для `RUNTIME_MODE=startup-check-only`, чтобы bootstrap path проверялся не только unit-тестами.
 - End-to-end subprocess smoke для `RUNTIME_MODE=observe-only`, чтобы runtime loop подтверждал отсутствие execution при сохранении signal processing.
 - End-to-end subprocess smoke для `RUNTIME_MODE=no-new-entries`, чтобы BUY signals логировались, но новые позиции не открывались.
+- `repair` и `unblock` поддерживают `--dry-run`, чтобы оператор мог проверить manual action без backup/state mutation и journal writes.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
 - Явная runtime error policy: warning/runtime-io ошибки журналируются без operator alert, а execution/fatal ошибки получают реакцию и уведомление.
@@ -97,12 +98,14 @@ python main.py acknowledge BTCUSDT
 ```bash
 python main.py repair BTCUSDT restore-from-exchange
 python main.py repair BTCUSDT drop-local-state
+python main.py repair BTCUSDT restore-from-exchange --dry-run
 ```
 
 Снятие block после исправления:
 
 ```bash
 python main.py unblock BTCUSDT
+python main.py unblock BTCUSDT --dry-run
 ```
 
 ## Runtime modes

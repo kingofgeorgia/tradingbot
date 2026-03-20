@@ -26,6 +26,10 @@ class CliSmokeTests(unittest.TestCase):
                 check=False,
             )
 
+    @staticmethod
+    def parse_last_stdout_json(stdout: str) -> dict[str, object]:
+        return json.loads(stdout.strip().splitlines()[-1])
+
     def test_inspect_command_smoke(self) -> None:
         result = self.run_smoke("inspect", "inspect")
 
@@ -44,6 +48,17 @@ class CliSmokeTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertIn("Applied manual repair for BTCUSDT: restore-from-exchange.", result.stdout)
 
+    def test_repair_restore_dry_run_command_smoke(self) -> None:
+        result = self.run_smoke("repair-restore-dry-run", "repair", "BTCUSDT", "restore-from-exchange", "--dry-run")
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = self.parse_last_stdout_json(result.stdout)
+        self.assertEqual(payload["open_positions"], [])
+        self.assertEqual(payload["startup_issue_keys"], ["BTCUSDT:exchange-position-without-local-state:block-symbol"])
+        self.assertEqual(payload["repair_rows"], 0)
+        self.assertEqual(payload["backups"], 0)
+        self.assertEqual(payload["restore_calls"], ["BTCUSDT"])
+
     def test_repair_drop_command_smoke(self) -> None:
         result = self.run_smoke("repair-drop", "repair", "BTCUSDT", "drop-local-state")
 
@@ -61,6 +76,15 @@ class CliSmokeTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertIn("Unblocked BTCUSDT.", result.stdout)
+
+    def test_unblock_dry_run_command_smoke_for_resolved_issue(self) -> None:
+        result = self.run_smoke("unblock-closed-dry-run", "unblock", "BTCUSDT", "--dry-run")
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = self.parse_last_stdout_json(result.stdout)
+        self.assertEqual(payload["blocked_symbols"], {"BTCUSDT": "resolved-manually"})
+        self.assertEqual(payload["repair_rows"], 0)
+        self.assertEqual(payload["backups"], 0)
 
     def test_startup_check_only_mode_smoke(self) -> None:
         result = self.run_smoke("runtime-startup-check-only")

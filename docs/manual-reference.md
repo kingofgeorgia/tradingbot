@@ -124,7 +124,9 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - `python main.py acknowledge BTCUSDT`
 - `python main.py repair BTCUSDT restore-from-exchange`
 - `python main.py repair BTCUSDT drop-local-state`
+- `python main.py repair BTCUSDT restore-from-exchange --dry-run`
 - `python main.py unblock BTCUSDT`
+- `python main.py unblock BTCUSDT --dry-run`
 
 - [src/binance_bot/services/reconciliation.py](../src/binance_bot/services/reconciliation.py) — startup reconciliation и блокировка mismatch scenarios. Ключевые сущности: `load_exchange_snapshot(...)`, `reconcile_symbol_state(...)`, `reconcile_runtime_state(...)`, `apply_reconciliation_result(...)`.
 - [src/binance_bot/services/repair.py](../src/binance_bot/services/repair.py) — manual repair и unblock flow, включая text/json paths для `inspect`. Ключевые сущности: `inspect_runtime_issues(...)`, `acknowledge_issue(...)`, `repair_symbol_state(...)`, `unblock_symbol(...)`, `_backup_state_before_manual_action(...)`.
@@ -153,6 +155,7 @@ Policy note:
 - `inspect` теперь показывает по каждому symbol его runtime category (`ready`, `position-open`, `suspect`, `blocked`), effective mode, issue/acknowledgement status и last manual action.
 - `ALERT_COOLDOWN_SECONDS` задает suppression window для повторяющихся startup/runtime alerts с одинаковым alert key; `0` отключает cooldown.
 - `inspect --json` возвращает стабильный top-level payload: `runtime_mode`, `open_positions`, `blocked_symbols`, `suspect_positions`, `startup_issue_keys`, `symbol_statuses`, `last_reconciled_at`, `last_reconciliation_status`, `last_manual_review_at`.
+- `repair ... --dry-run` и `unblock ... --dry-run` проходят тот же decision/reconciliation path, но не делают backup, не сохраняют state и не пишут repair journal.
 - `startup-check-only` smoke теперь прогоняется как subprocess path: reconciliation выполняется, startup summary отправляется, trading loop не стартует.
 - `observe-only` smoke теперь прогоняется как subprocess path с `RUN_ONCE`: reconciliation и один runtime cycle выполняются, signal logging остается активным, но execution не происходит.
 - `no-new-entries` smoke теперь прогоняется как subprocess path с `RUN_ONCE`: reconciliation и один runtime cycle выполняются, BUY signals логируются, но новые позиции не открываются.

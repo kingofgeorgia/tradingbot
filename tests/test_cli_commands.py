@@ -186,6 +186,38 @@ class CliCommandTests(unittest.TestCase):
         self.assertEqual(self.state.startup_issues, [])
         self.assertEqual(self.order_manager.drop_calls, ["BTCUSDT"])
 
+    def test_repair_command_supports_dry_run(self) -> None:
+        output = self.run_command("repair", "BTCUSDT", "restore-from-exchange", "--dry-run")
+
+        self.assertEqual(output, "Dry-run: would apply manual repair for BTCUSDT: restore-from-exchange.")
+        self.assertNotIn("BTCUSDT", self.state.open_positions)
+        self.assertEqual(len(self.state.startup_issues), 1)
+        self.assertEqual(self.order_manager.restore_calls, ["BTCUSDT"])
+        self.assertEqual(self.repair_journal.rows, [])
+        self.assertEqual(self.state_store.saved_states, [])
+
+    def test_unblock_command_supports_dry_run(self) -> None:
+        self.state.startup_issues = []
+        self.state.suspect_positions = {}
+        self.client.position_snapshots["BTCUSDT"] = ExchangePositionSnapshot(
+            symbol="BTCUSDT",
+            base_asset="BTC",
+            exchange_quantity=0.0,
+            average_entry_price=None,
+            last_order_id=None,
+            last_trade_time=None,
+            has_open_orders=False,
+            has_recent_trades=False,
+            step_size=0.001,
+        )
+
+        output = self.run_command("unblock", "BTCUSDT", "--dry-run")
+
+        self.assertEqual(output, "Dry-run: would unblock BTCUSDT.")
+        self.assertIn("BTCUSDT", self.state.blocked_symbols)
+        self.assertEqual(self.repair_journal.rows, [])
+        self.assertEqual(self.state_store.saved_states, [])
+
     def test_unblock_command_denies_when_issue_still_open(self) -> None:
         output = self.run_command("unblock", "BTCUSDT")
 

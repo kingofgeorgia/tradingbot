@@ -151,8 +151,8 @@
 	target: 2026-03-20
 - `NEXT-19` Добавить dry-run режим для `repair` и `unblock`.
 	owner: copilot
-	status: todo
-	target: 2026-04-29
+	status: done
+	target: 2026-03-20
 
 ## Later
 

@@ -159,6 +159,61 @@ class RepairFlowTests(unittest.TestCase):
         backup_files = list(self.settings.state_backups_dir.glob("*.json"))
         self.assertEqual(len(backup_files), 1)
 
+    def test_repair_dry_run_does_not_mutate_state_or_write_backup(self) -> None:
+        original_payload = self.state.to_dict()
+
+        message = repair_symbol_state(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            order_manager=self.order_manager,
+            repair_journal=self.repair_journal,
+            loggers=self.loggers,
+            symbol="BTCUSDT",
+            action="restore-from-exchange",
+            dry_run=True,
+        )
+
+        self.assertEqual(message, "Dry-run: would apply manual repair for BTCUSDT: restore-from-exchange.")
+        self.assertEqual(self.state.to_dict(), original_payload)
+        self.assertEqual(self.repair_journal.rows, [])
+        self.assertEqual(self.state_store.saved_states, [])
+        self.assertEqual(list(self.settings.state_backups_dir.glob("*.json")), [])
+
+    def test_unblock_dry_run_does_not_mutate_state_or_write_backup(self) -> None:
+        self.state.startup_issues = []
+        self.state.suspect_positions = {}
+        self.client.position_snapshots["BTCUSDT"] = ExchangePositionSnapshot(
+            symbol="BTCUSDT",
+            base_asset="BTC",
+            exchange_quantity=0.0,
+            average_entry_price=None,
+            last_order_id=None,
+            last_trade_time=None,
+            has_open_orders=False,
+            has_recent_trades=False,
+            step_size=0.001,
+        )
+        original_payload = self.state.to_dict()
+
+        message = unblock_symbol(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            repair_journal=self.repair_journal,
+            loggers=self.loggers,
+            symbol="BTCUSDT",
+            dry_run=True,
+        )
+
+        self.assertEqual(message, "Dry-run: would unblock BTCUSDT.")
+        self.assertEqual(self.state.to_dict(), original_payload)
+        self.assertEqual(self.repair_journal.rows, [])
+        self.assertEqual(self.state_store.saved_states, [])
+        self.assertEqual(list(self.settings.state_backups_dir.glob("*.json")), [])
+
 
 if __name__ == "__main__":
     unittest.main()
