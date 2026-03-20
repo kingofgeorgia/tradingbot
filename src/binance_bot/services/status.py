@@ -46,3 +46,18 @@ def format_runtime_health_notification(*, app_mode: str, report: RuntimeStatusRe
         f"Startup issues: {issues}\n"
         f"Last reconciliation status: {report.last_reconciliation_status or 'n/a'}"
     )
+
+def format_startup_summary_notification(*, app_mode: str, report: RuntimeStatusReport) -> str:
+    blocked = ", ".join(sorted(report.blocked_symbols)) or "none"
+    suspect = ", ".join(sorted(report.suspect_positions)) or "none"
+    positions = ", ".join(report.open_positions) or "none"
+    issues = ", ".join(report.startup_issue_keys) or "none"
+    return (
+        f"[{app_mode}] Startup summary\n"
+        f"Runtime mode: {report.runtime_mode}\n"
+        f"Open positions: {positions}\n"
+        f"Blocked symbols: {blocked}\n"
+        f"Suspect positions: {suspect}\n"
+        f"Startup issues: {issues}\n"
+        f"Last reconciliation status: {report.last_reconciliation_status or 'n/a'}"
+    )

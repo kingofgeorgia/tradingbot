@@ -99,8 +99,8 @@
 	target: 2026-03-20
 - `NEXT-06` Добавить startup summary notification после reconciliation.
 	owner: copilot
-	status: todo
-	target: 2026-04-14
+	status: done
+	target: 2026-03-20
 - `NEXT-07` Добавить recovery path для битого или частично несовместимого `state.json`.
 	owner: copilot
 	status: todo

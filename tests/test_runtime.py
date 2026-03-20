@@ -8,14 +8,16 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from binance_bot.core.models import Position
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from binance_bot.core.models import BotState, StartupIssue
 from binance_bot.core.exchange import ExchangeRuntimePort
-from binance_bot.services.runtime import run_loop
+from binance_bot.core.models import BotState, ExchangePositionSnapshot, StartupIssue
+from binance_bot.services.runtime import reconcile_startup, run_loop
 from tests.fakes import FakeJournal, FakeLoggers, FakeNotifier, FakeStateStore, make_settings
 
 
@@ -86,3 +88,115 @@ class RuntimeHeartbeatTests(unittest.TestCase):
         self.assertEqual(len(runtime.notifier.messages), 2)
         self.assertIn("Reaction: terminate-process", runtime.notifier.messages[1])
         self.assertEqual(runtime.errors_journal.rows[0]["scope"], "main-loop")
+
+
+class StartupSummaryNotificationTests(unittest.TestCase):
+    @staticmethod
+    def make_runtime_with_state(state: BotState, client) -> SimpleNamespace:
+        settings = make_settings()
+        return SimpleNamespace(
+            settings=settings,
+            loggers=FakeLoggers(),
+            notifier=FakeNotifier(),
+            state_store=FakeStateStore(state),
+            client=client,
+            strategy=object(),
+            risk_manager=object(),
+            order_manager=SimpleNamespace(
+                restore_position_from_exchange=lambda snapshot, runtime_state: runtime_state.open_positions.update(
+                    {
+                        snapshot.symbol: Position(
+                            symbol=snapshot.symbol,
+                            quantity=snapshot.exchange_quantity,
+                            entry_price=snapshot.average_entry_price or 0.0,
+                            stop_loss=(snapshot.average_entry_price or 0.0) * 0.98,
+                            take_profit=(snapshot.average_entry_price or 0.0) * 1.04,
+                            opened_at="2026-03-20T10:00:00+00:00",
+                            order_id=snapshot.last_order_id or 0,
+                            mode="demo",
+                            quote_spent=(snapshot.average_entry_price or 0.0) * snapshot.exchange_quantity,
+                            fee_paid_quote=0.0,
+                        )
+                    }
+                ),
+                mark_position_unrecoverable=lambda symbol, reason, runtime_state: None,
+            ),
+            reconciliation_journal=FakeJournal(),
+            errors_journal=FakeJournal(),
+            repair_journal=FakeJournal(),
+        )
+
+    def test_reconcile_startup_sends_clean_summary(self) -> None:
+        state = BotState()
+        client = SimpleNamespace(
+            get_position_snapshot=lambda symbol, quote_asset: ExchangePositionSnapshot(
+                symbol=symbol,
+                base_asset=symbol[: -len(quote_asset)],
+                exchange_quantity=0.0,
+                average_entry_price=None,
+                last_order_id=None,
+                last_trade_time=None,
+                has_open_orders=False,
+                has_recent_trades=False,
+                step_size=0.001,
+            )
+        )
+        runtime = self.make_runtime_with_state(state, client)
+
+        reconcile_startup(runtime)
+
+        self.assertEqual(len(runtime.notifier.messages), 1)
+        self.assertIn("Startup summary", runtime.notifier.messages[0])
+        self.assertIn("Last reconciliation status: clean", runtime.notifier.messages[0])
+
+    def test_reconcile_startup_sends_issue_alerts_and_summary(self) -> None:
+        state = BotState(
+            open_positions={
+                "BTCUSDT": Position(
+                    symbol="BTCUSDT",
+                    quantity=0.25,
+                    entry_price=100.0,
+                    stop_loss=98.0,
+                    take_profit=104.0,
+                    opened_at="2026-03-20T10:00:00+00:00",
+                    order_id=1,
+                    mode="demo",
+                    quote_spent=25.0,
+                    fee_paid_quote=0.1,
+                )
+            }
+        )
+
+        def get_position_snapshot(symbol: str, quote_asset: str) -> ExchangePositionSnapshot:
+            if symbol == "BTCUSDT":
+                return ExchangePositionSnapshot(
+                    symbol=symbol,
+                    base_asset="BTC",
+                    exchange_quantity=0.0,
+                    average_entry_price=None,
+                    last_order_id=None,
+                    last_trade_time=None,
+                    has_open_orders=False,
+                    has_recent_trades=False,
+                    step_size=0.001,
+                )
+            return ExchangePositionSnapshot(
+                symbol=symbol,
+                base_asset="ETH",
+                exchange_quantity=0.0,
+                average_entry_price=None,
+                last_order_id=None,
+                last_trade_time=None,
+                has_open_orders=False,
+                has_recent_trades=False,
+                step_size=0.001,
+            )
+
+        runtime = self.make_runtime_with_state(state, SimpleNamespace(get_position_snapshot=get_position_snapshot))
+
+        reconcile_startup(runtime)
+
+        self.assertEqual(len(runtime.notifier.messages), 2)
+        self.assertIn("Startup mismatch for BTCUSDT", runtime.notifier.messages[0])
+        self.assertIn("Startup summary", runtime.notifier.messages[1])
+        self.assertIn("Blocked symbols: BTCUSDT", runtime.notifier.messages[1])

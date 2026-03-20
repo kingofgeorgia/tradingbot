@@ -17,7 +17,12 @@ from binance_bot.strategy.ema_cross import EmaCrossStrategy
 from binance_bot.services.cycle import process_cycle
 from binance_bot.services.error_handler import record_api_error
 from binance_bot.services.reconciliation import apply_reconciliation_result, reconcile_runtime_state
-from binance_bot.services.status import build_runtime_status_report, format_runtime_health_notification, format_status_report
+from binance_bot.services.status import (
+    build_runtime_status_report,
+    format_runtime_health_notification,
+    format_startup_summary_notification,
+    format_status_report,
+)
 
 
 @dataclass(slots=True)
@@ -136,10 +141,12 @@ def reconcile_startup(runtime: AppRuntime) -> None:
         loggers=runtime.loggers,
     )
     refreshed_state = runtime.state_store.load()
-    runtime.loggers.app.info("Startup status summary:\n%s", format_status_report(build_runtime_status_report(
+    report = build_runtime_status_report(
         settings=runtime.settings,
         state=refreshed_state,
-    )))
+    )
+    runtime.loggers.app.info("Startup status summary:\n%s", format_status_report(report))
+    runtime.notifier.send(format_startup_summary_notification(app_mode=runtime.settings.app_mode, report=report))
 
 
 def run_loop(runtime: AppRuntime) -> None:
