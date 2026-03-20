@@ -66,6 +66,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - [docs/architecture/operator-testnet-next15-btcusdt-snippet.md](./architecture/operator-testnet-next15-btcusdt-snippet.md) — фиксированный PowerShell block именно для `NEXT-15` по `BTCUSDT`.
 - [docs/architecture/operator-testnet-next17-quick-runbook.md](./architecture/operator-testnet-next17-quick-runbook.md) — сокращенный PowerShell runbook именно для `NEXT-17`.
 - [docs/architecture/testnet-evidence-report-btcusdt-next17.md](./architecture/testnet-evidence-report-btcusdt-next17.md) — сценарный отчет-заготовка для `NEXT-17`.
+- Текущее planning state: открытых `Now`-задач нет; незакрытый ближайший слой находится в blocked `NEXT-15..17` и в секции `Later`.
 
 Навигация: [к модулю](#modules) | [к operator flow](#operator-flow) | [к тестам](#tests) | [к содержанию](#содержание)
 

@@ -129,6 +129,7 @@
 - Добавлен встроенный backlog проекта как рабочий planning artifact для следующих итераций.
 - Подготовлены manual testnet operator docs, включая fixed PowerShell block для `NEXT-15` по `BTCUSDT`.
 - Добавлены отдельный quick path и сценарный отчет для `NEXT-17` long-runtime journal review.
+- Зафиксировано planning state: открытых `Now`-задач не осталось, а ближайшие незакрытые шаги находятся в blocked `NEXT-15..17`.
 
 Ключевые модули:
 - [docs/backlog.md](../backlog.md)

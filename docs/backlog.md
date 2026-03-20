@@ -39,6 +39,8 @@
 
 ## Now
 
+Открытых задач в `Now` сейчас нет. Все текущие `NOW-*` закрыты на `2026-03-20`; следующий незакрытый слой состоит из user-blocked `NEXT-15`, `NEXT-16`, `NEXT-17` и будущих `Later`-идей.
+
 - `NOW-15` Добавить state backup snapshot перед любым manual repair действием.
 	owner: copilot
 	status: done

@@ -30,6 +30,7 @@
 - Для самого короткого запуска есть minimal snippet в `docs/architecture/operator-testnet-one-shot-snippet.md`, а для сценариев `NEXT-15` и `NEXT-16` есть отдельные BTCUSDT report drafts.
 - Для `NEXT-15` есть отдельный fixed PowerShell block без переменных сценария в `docs/architecture/operator-testnet-next15-btcusdt-snippet.md`.
 - Для `NEXT-17` есть отдельный quick runbook в `docs/architecture/operator-testnet-next17-quick-runbook.md` и сценарный отчет в `docs/architecture/testnet-evidence-report-btcusdt-next17.md`.
+- По backlog сейчас нет открытых задач в `Now`; оставшийся ближайший слой состоит из user-blocked testnet validation задач `NEXT-15..17`.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
 - Явная runtime error policy: warning/runtime-io ошибки журналируются без operator alert, а execution/fatal ошибки получают реакцию и уведомление.
