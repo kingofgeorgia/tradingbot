@@ -48,32 +48,32 @@
 	target: 2026-03-20
 - `NOW-18` Добавить idempotency tests для повторного startup reconciliation без лишних side effects.
 	owner: copilot
-	status: todo
-	target: 2026-04-01
+	status: done
+	target: 2026-03-20
 - `NOW-01` Добавить CLI integration test для `inspect`.
 	owner: copilot
-	status: in-progress
-	target: 2026-03-23
+	status: done
+	target: 2026-03-20
 - `NOW-02` Добавить CLI integration test для `acknowledge <SYMBOL>`.
 	owner: copilot
-	status: todo
-	target: 2026-03-23
+	status: done
+	target: 2026-03-20
 - `NOW-03` Добавить CLI integration test для `repair <SYMBOL> restore-from-exchange`.
 	owner: copilot
-	status: todo
-	target: 2026-03-24
+	status: done
+	target: 2026-03-20
 - `NOW-04` Добавить CLI integration test для `repair <SYMBOL> drop-local-state`.
 	owner: copilot
-	status: todo
-	target: 2026-03-24
+	status: done
+	target: 2026-03-20
 - `NOW-05` Добавить CLI integration test для `unblock <SYMBOL>` с open/closed issue сценариями.
 	owner: copilot
-	status: todo
-	target: 2026-03-24
+	status: done
+	target: 2026-03-20
 - `NOW-17` Добавить subprocess-level CLI smoke tests для operator commands.
 	owner: copilot
-	status: todo
-	target: 2026-03-31
+	status: done
+	target: 2026-03-20
 
 ## Next
 

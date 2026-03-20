@@ -55,6 +55,10 @@ class Settings:
         return self.data_dir / "state.json"
 
     @property
+    def state_backups_dir(self) -> Path:
+        return self.data_dir / "state_backups"
+
+    @property
     def signals_journal_file(self) -> Path:
         return self.data_dir / "signals.csv"
 
@@ -140,4 +144,5 @@ def load_settings() -> Settings:
 
 def ensure_runtime_directories(settings: Settings) -> None:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
+    settings.state_backups_dir.mkdir(parents=True, exist_ok=True)
     settings.logs_dir.mkdir(parents=True, exist_ok=True)

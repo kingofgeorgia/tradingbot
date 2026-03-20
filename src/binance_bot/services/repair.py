@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from binance_bot.core.decisions import decide_issue_acknowledgement, decide_manual_repair_action, decide_unblock_allowed
 from binance_bot.core.models import RepairRecord
 from binance_bot.services.error_handler import utc_now_iso
@@ -55,6 +57,8 @@ def repair_symbol_state(*, settings, client, state, state_store, order_manager, 
     if not decision.allowed:
         return f"{symbol}: {decision.reason}"
 
+    _backup_state_before_manual_action(settings=settings, state=state, symbol=symbol, action=action)
+
     if action == "restore-from-exchange":
         order_manager.restore_position_from_exchange(snapshot, state)
         _resolve_issue_for_symbol(state, symbol)
@@ -94,6 +98,8 @@ def unblock_symbol(*, settings, client, state, state_store, repair_journal, logg
     )
     if not decision.allowed:
         return f"{symbol}: {decision.reason}"
+
+    _backup_state_before_manual_action(settings=settings, state=state, symbol=symbol, action="unblock")
 
     state.blocked_symbols.pop(symbol, None)
     state.suspect_positions.pop(symbol, None)
@@ -146,3 +152,10 @@ def _record_repair_action(*, settings, state, repair_journal, symbol: str, actio
             timestamp_utc=timestamp,
         )
     )
+
+
+def _backup_state_before_manual_action(*, settings, state, symbol: str, action: str) -> None:
+    settings.state_backups_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = utc_now_iso().replace(":", "-")
+    backup_file = settings.state_backups_dir / f"{timestamp}__{symbol}__{action}.json"
+    backup_file.write_text(json.dumps(state.to_dict(), ensure_ascii=True, indent=2), encoding="utf-8")

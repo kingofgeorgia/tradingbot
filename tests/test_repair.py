@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -36,6 +38,8 @@ class FakeOrderManager:
 class RepairFlowTests(unittest.TestCase):
     def setUp(self) -> None:
         self.settings = make_settings()
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.settings.data_dir = Path(self.temp_dir.name)
         self.client = FakeBinanceClient()
         self.client.position_snapshots["BTCUSDT"] = ExchangePositionSnapshot(
             symbol="BTCUSDT",
@@ -67,6 +71,9 @@ class RepairFlowTests(unittest.TestCase):
         self.loggers = FakeLoggers()
         self.order_manager = FakeOrderManager()
 
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
+
     def test_acknowledge_issue_records_review(self) -> None:
         message = acknowledge_issue(
             symbol="BTCUSDT",
@@ -97,6 +104,10 @@ class RepairFlowTests(unittest.TestCase):
         self.assertIn("Applied manual repair", message)
         self.assertIn("BTCUSDT", self.state.open_positions)
         self.assertEqual(self.state.startup_issues, [])
+        backup_files = list(self.settings.state_backups_dir.glob("*.json"))
+        self.assertEqual(len(backup_files), 1)
+        backup_payload = json.loads(backup_files[0].read_text(encoding="utf-8"))
+        self.assertIn("BTCUSDT", backup_payload["blocked_symbols"])
 
     def test_unblock_denied_while_issue_still_open(self) -> None:
         message = unblock_symbol(
@@ -110,6 +121,7 @@ class RepairFlowTests(unittest.TestCase):
         )
 
         self.assertIn("startup-issue-still-open", message)
+        self.assertEqual(list(self.settings.state_backups_dir.glob("*.json")), [])
 
     def test_unblock_allowed_after_issue_resolution(self) -> None:
         self.state.startup_issues = []
@@ -127,6 +139,8 @@ class RepairFlowTests(unittest.TestCase):
 
         self.assertIn("Unblocked", message)
         self.assertNotIn("BTCUSDT", self.state.blocked_symbols)
+        backup_files = list(self.settings.state_backups_dir.glob("*.json"))
+        self.assertEqual(len(backup_files), 1)
 
 
 if __name__ == "__main__":
