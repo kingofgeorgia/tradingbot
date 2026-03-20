@@ -2,6 +2,8 @@
 
 Полный единый manual проекта в компактном формате.
 
+One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем проект существует, что в нем главное и почему здесь приоритет у safety/operator контура, а не у усложнения стратегии.
+
 ## Содержание
 
 - [Быстрые переходы](#быстрые-переходы)
@@ -48,6 +50,7 @@
 ## Documentation Files
 
 - [docs/backlog.md](./backlog.md) — рабочий backlog проекта.
+- [docs/project-purpose.md](./project-purpose.md) — подробное описание главной сути проекта и его engineering priority.
 - [docs/architecture/changelog.md](./architecture/changelog.md) — хронология архитектурных фаз и изменений.
 - [docs/architecture/system-overview.md](./architecture/system-overview.md) — high-level карта модулей проекта.
 - [docs/architecture/invariants.md](./architecture/invariants.md) — архитектурные инварианты проекта.

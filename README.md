@@ -40,6 +40,7 @@
 - `src/binance_bot/core/` — модели, state store, логирование, CSV-журналы, pure decisions и helpers округления.
 - `docs/architecture/` — архитектурные инварианты и overview проекта.
 - `docs/architecture/changelog.md` — хронология архитектурных фаз и ключевых изменений по этапам.
+- `docs/project-purpose.md` — подробное описание того, в чем главная суть проекта.
 - `docs/manual-reference.md` — индекс полного технического manual по проекту.
 - `docs/backlog.md` — рабочий backlog проекта с приоритетами `Now / Next / Later / Not now`.
 - `tests/` — unit- и service-level тесты для strategy, risk, order manager, state store, decisions, reconciliation, cycle и position monitor.
