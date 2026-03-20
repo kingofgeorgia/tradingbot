@@ -23,7 +23,8 @@ def _run_operator_command(runtime, arguments: list[str]) -> None:
     command = arguments[0]
 
     if command == "inspect":
-        print(inspect_runtime_issues(settings=runtime.settings, client=runtime.client, state=state))
+        as_json = len(arguments) >= 2 and arguments[1] == "--json"
+        print(inspect_runtime_issues(settings=runtime.settings, client=runtime.client, state=state, as_json=as_json))
         return
     if command == "acknowledge" and len(arguments) >= 2:
         print(
@@ -66,7 +67,7 @@ def _run_operator_command(runtime, arguments: list[str]) -> None:
         )
         return
 
-    print("Unsupported command. Use: inspect | acknowledge <SYMBOL> | repair <SYMBOL> <ACTION> | unblock <SYMBOL>")
+    print("Unsupported command. Use: inspect [--json] | acknowledge <SYMBOL> | repair <SYMBOL> <ACTION> | unblock <SYMBOL>")
 
 
 if __name__ == "__main__":

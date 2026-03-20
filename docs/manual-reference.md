@@ -120,14 +120,15 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 
 Команды оператора:
 - `python main.py inspect`
+- `python main.py inspect --json`
 - `python main.py acknowledge BTCUSDT`
 - `python main.py repair BTCUSDT restore-from-exchange`
 - `python main.py repair BTCUSDT drop-local-state`
 - `python main.py unblock BTCUSDT`
 
 - [src/binance_bot/services/reconciliation.py](../src/binance_bot/services/reconciliation.py) — startup reconciliation и блокировка mismatch scenarios. Ключевые сущности: `load_exchange_snapshot(...)`, `reconcile_symbol_state(...)`, `reconcile_runtime_state(...)`, `apply_reconciliation_result(...)`.
-- [src/binance_bot/services/repair.py](../src/binance_bot/services/repair.py) — manual repair и unblock flow. Ключевые сущности: `inspect_runtime_issues(...)`, `acknowledge_issue(...)`, `repair_symbol_state(...)`, `unblock_symbol(...)`, `_backup_state_before_manual_action(...)`.
-- [src/binance_bot/services/status.py](../src/binance_bot/services/status.py) — status summary для `inspect`, per-symbol runtime categories и heartbeat notifications. Ключевые сущности: `build_runtime_status_report(...)`, `format_status_report(...)`, `format_runtime_health_notification(...)`, `format_startup_summary_notification(...)`.
+- [src/binance_bot/services/repair.py](../src/binance_bot/services/repair.py) — manual repair и unblock flow, включая text/json paths для `inspect`. Ключевые сущности: `inspect_runtime_issues(...)`, `acknowledge_issue(...)`, `repair_symbol_state(...)`, `unblock_symbol(...)`, `_backup_state_before_manual_action(...)`.
+- [src/binance_bot/services/status.py](../src/binance_bot/services/status.py) — status summary для `inspect`, per-symbol runtime categories, JSON serializer и heartbeat notifications. Ключевые сущности: `build_runtime_status_report(...)`, `format_status_report(...)`, `format_status_report_json(...)`, `runtime_status_report_to_dict(...)`, `format_runtime_health_notification(...)`, `format_startup_summary_notification(...)`.
 - [docs/architecture/operator-playbook.md](./architecture/operator-playbook.md) — playbook для ручной работы с проблемными символами.
 
 Порядок работы:
@@ -142,6 +143,7 @@ Policy note:
 - Per-symbol `runtime_mode` не может ослабить глобальный `RUNTIME_MODE`; effective mode для символа всегда выбирается как более строгий из двух.
 - `inspect` теперь показывает по каждому symbol его runtime category (`ready`, `position-open`, `suspect`, `blocked`), effective mode, issue/acknowledgement status и last manual action.
 - `ALERT_COOLDOWN_SECONDS` задает suppression window для повторяющихся startup/runtime alerts с одинаковым alert key; `0` отключает cooldown.
+- `inspect --json` возвращает стабильный top-level payload: `runtime_mode`, `open_positions`, `blocked_symbols`, `suspect_positions`, `startup_issue_keys`, `symbol_statuses`, `last_reconciled_at`, `last_reconciliation_status`, `last_manual_review_at`.
 
 Навигация: [к модулю](#modules) | [к тестам](#tests) | [к содержанию](#содержание)
 

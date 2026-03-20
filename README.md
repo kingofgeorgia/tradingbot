@@ -18,6 +18,7 @@
 - Более подробный `inspect` output с per-symbol runtime status categories, effective runtime mode и operator-context по каждому symbol.
 - Настраиваемые heartbeat/summary notifications по runtime health и blocked symbols.
 - Cooldown policy для повторяющихся startup/runtime alerts, чтобы persistent проблемы не спамили operator channel каждый цикл.
+- `inspect --json` для машиночитаемого runtime status с устойчивым набором top-level keys и per-symbol status payload.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
 - Явная runtime error policy: warning/runtime-io ошибки журналируются без operator alert, а execution/fatal ошибки получают реакцию и уведомление.
@@ -73,6 +74,12 @@
 
 ```bash
 python main.py inspect
+```
+
+Машиночитаемый статус:
+
+```bash
+python main.py inspect --json
 ```
 
 Подтверждение startup issue:

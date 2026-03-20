@@ -115,8 +115,8 @@
 	target: 2026-03-20
 - `NEXT-10` Добавить `inspect --json` для машиночитаемого runtime status.
 	owner: copilot
-	status: todo
-	target: 2026-04-22
+	status: done
+	target: 2026-03-20
 - `NEXT-11` Добавить тест на JSON-формат статуса и стабильность ключей ответа.
 	owner: copilot
 	status: todo

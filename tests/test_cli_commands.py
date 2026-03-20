@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # ruff: noqa: E402
 
+import json
 import sys
 import tempfile
 import unittest
@@ -117,6 +118,15 @@ class CliCommandTests(unittest.TestCase):
 
         self.assertIn("Blocked symbols: BTCUSDT", output)
         self.assertIn("Startup issues: BTCUSDT:exchange-position-without-local-state:block-symbol", output)
+
+    def test_inspect_json_command_outputs_machine_readable_status(self) -> None:
+        output = self.run_command("inspect", "--json")
+        payload = json.loads(output)
+
+        self.assertEqual(payload["blocked_symbols"]["BTCUSDT"], "exchange-position-without-local-state")
+        self.assertEqual(payload["startup_issue_keys"], ["BTCUSDT:exchange-position-without-local-state:block-symbol"])
+        self.assertEqual(payload["symbol_statuses"][0]["symbol"], "BTCUSDT")
+        self.assertEqual(payload["symbol_statuses"][0]["category"], "blocked")
 
     def test_acknowledge_command_updates_issue_state(self) -> None:
         output = self.run_command("acknowledge", "BTCUSDT")

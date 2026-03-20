@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -13,6 +14,7 @@ from binance_bot.core.models import BotState, StartupIssue
 from binance_bot.services.status import (
     build_runtime_status_report,
     format_runtime_health_notification,
+    format_status_report_json,
     format_startup_summary_notification,
     format_status_report,
 )
@@ -106,6 +108,48 @@ class StatusTests(unittest.TestCase):
         self.assertIn("Blocked symbols: BTCUSDT", text)
         self.assertIn("Suspect positions: BTCUSDT", text)
         self.assertIn("Last reconciliation status: blocked-symbols-present", text)
+
+    def test_status_report_json_uses_stable_keys(self) -> None:
+        settings = make_settings()
+        state = BotState(
+            blocked_symbols={"BTCUSDT": "quantity-mismatch"},
+            suspect_positions={"BTCUSDT": "quantity-mismatch"},
+            startup_issues=[
+                StartupIssue(
+                    symbol="BTCUSDT",
+                    issue_type="quantity-mismatch",
+                    local_qty=0.25,
+                    exchange_qty=0.20,
+                    action="block-symbol",
+                    status="open",
+                    message="qty mismatch",
+                )
+            ],
+            last_reconciliation_status="blocked-symbols-present",
+            last_manual_action_by_symbol={"BTCUSDT": "acknowledge"},
+            acknowledged_startup_issues=["BTCUSDT:quantity-mismatch:block-symbol"],
+        )
+
+        report = build_runtime_status_report(settings=settings, state=state)
+        payload = json.loads(format_status_report_json(report))
+
+        self.assertEqual(
+            list(payload.keys()),
+            [
+                "runtime_mode",
+                "open_positions",
+                "blocked_symbols",
+                "suspect_positions",
+                "startup_issue_keys",
+                "symbol_statuses",
+                "last_reconciled_at",
+                "last_reconciliation_status",
+                "last_manual_review_at",
+            ],
+        )
+        self.assertEqual(payload["symbol_statuses"][0]["symbol"], "BTCUSDT")
+        self.assertEqual(payload["symbol_statuses"][0]["category"], "blocked")
+        self.assertEqual(payload["symbol_statuses"][0]["issue_acknowledged"], True)
 
 
 if __name__ == "__main__":

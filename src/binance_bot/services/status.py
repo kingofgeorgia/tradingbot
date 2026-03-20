@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from binance_bot.core.models import RuntimeStatusReport, StartupIssue, SymbolRuntimeStatus
 
 
@@ -37,6 +39,10 @@ def format_status_report(report: RuntimeStatusReport) -> str:
     )
 
 
+def format_status_report_json(report: RuntimeStatusReport) -> str:
+    return json.dumps(runtime_status_report_to_dict(report), indent=2)
+
+
 def format_runtime_health_notification(*, app_mode: str, report: RuntimeStatusReport, cycle_number: int) -> str:
     blocked = ", ".join(sorted(report.blocked_symbols)) or "none"
     positions = ", ".join(report.open_positions) or "none"
@@ -65,6 +71,20 @@ def format_startup_summary_notification(*, app_mode: str, report: RuntimeStatusR
         f"Startup issues: {issues}\n"
         f"Last reconciliation status: {report.last_reconciliation_status or 'n/a'}"
     )
+
+
+def runtime_status_report_to_dict(report: RuntimeStatusReport) -> dict[str, object]:
+    return {
+        "runtime_mode": report.runtime_mode,
+        "open_positions": list(report.open_positions),
+        "blocked_symbols": dict(report.blocked_symbols),
+        "suspect_positions": dict(report.suspect_positions),
+        "startup_issue_keys": list(report.startup_issue_keys),
+        "symbol_statuses": [_symbol_status_to_dict(status) for status in report.symbol_statuses],
+        "last_reconciled_at": report.last_reconciled_at,
+        "last_reconciliation_status": report.last_reconciliation_status,
+        "last_manual_review_at": report.last_manual_review_at,
+    }
 
 
 def _build_symbol_runtime_statuses(*, settings, state) -> list[SymbolRuntimeStatus]:
@@ -122,3 +142,18 @@ def _format_symbol_status_line(status: SymbolRuntimeStatus) -> str:
         f"open_position={open_position}; blocked={blocked}; suspect={suspect}; issue={issue}; "
         f"acknowledged={acknowledged}; last_manual_action={last_manual_action}; reason={status.reason}"
     )
+
+
+def _symbol_status_to_dict(status: SymbolRuntimeStatus) -> dict[str, object]:
+    return {
+        "symbol": status.symbol,
+        "category": status.status,
+        "effective_runtime_mode": status.effective_runtime_mode,
+        "has_open_position": status.has_open_position,
+        "blocked": status.blocked,
+        "suspect_position": status.suspect_position,
+        "startup_issue_key": status.startup_issue_key,
+        "issue_acknowledged": status.issue_acknowledged,
+        "last_manual_action": status.last_manual_action,
+        "reason": status.reason,
+    }
