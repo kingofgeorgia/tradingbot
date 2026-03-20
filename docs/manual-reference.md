@@ -60,6 +60,9 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - [docs/architecture/testnet-evidence-report-template.md](./architecture/testnet-evidence-report-template.md) — шаблон отчета для фиксации результатов ручного testnet-прогона.
 - [docs/architecture/operator-testnet-quick-runbook.md](./architecture/operator-testnet-quick-runbook.md) — one-page quick runbook для `BTCUSDT` по сценариям `NEXT-15` и `NEXT-16`.
 - [docs/architecture/testnet-evidence-report-btcusdt-draft.md](./architecture/testnet-evidence-report-btcusdt-draft.md) — предзаполненный draft report для ручного testnet-прогона по `BTCUSDT`.
+- [docs/architecture/operator-testnet-one-shot-snippet.md](./architecture/operator-testnet-one-shot-snippet.md) — минимальный PowerShell snippet для одного evidence run без полного runbook.
+- [docs/architecture/testnet-evidence-report-btcusdt-next15.md](./architecture/testnet-evidence-report-btcusdt-next15.md) — сценарный отчет-заготовка для `NEXT-15`.
+- [docs/architecture/testnet-evidence-report-btcusdt-next16.md](./architecture/testnet-evidence-report-btcusdt-next16.md) — сценарный отчет-заготовка для `NEXT-16`.
 
 Навигация: [к модулю](#modules) | [к operator flow](#operator-flow) | [к тестам](#tests) | [к содержанию](#содержание)
 
@@ -142,6 +145,8 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - [docs/architecture/testnet-evidence-report-template.md](./architecture/testnet-evidence-report-template.md) — шаблон для итоговой записи evidence и operator conclusions.
 - [docs/architecture/operator-testnet-quick-runbook.md](./architecture/operator-testnet-quick-runbook.md) — сокращенный runbook без общего scaffolding для быстрого прогона `NEXT-15` и `NEXT-16`.
 - [docs/architecture/testnet-evidence-report-btcusdt-draft.md](./architecture/testnet-evidence-report-btcusdt-draft.md) — готовая заготовка отчета с полями под `BTCUSDT`.
+- [docs/architecture/operator-testnet-one-shot-snippet.md](./architecture/operator-testnet-one-shot-snippet.md) — минимальный snippet для быстрого baseline + `startup-check-only` run.
+- [docs/architecture/testnet-evidence-report-btcusdt-next15.md](./architecture/testnet-evidence-report-btcusdt-next15.md) и [docs/architecture/testnet-evidence-report-btcusdt-next16.md](./architecture/testnet-evidence-report-btcusdt-next16.md) — отдельные сценарные формы отчета вместо одного общего черновика.
 
 Порядок работы:
 1. Запустить `inspect` и определить problem symbols.

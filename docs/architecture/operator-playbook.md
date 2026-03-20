@@ -40,6 +40,8 @@ Companion docs:
 - `docs/architecture/testnet-evidence-report-template.md` for the final evidence report.
 - `docs/architecture/operator-testnet-quick-runbook.md` for a one-page BTCUSDT quick path covering `NEXT-15` and `NEXT-16`.
 - `docs/architecture/testnet-evidence-report-btcusdt-draft.md` for a prefilled BTCUSDT report draft.
+- `docs/architecture/operator-testnet-one-shot-snippet.md` for a minimal one-pass startup-check-only evidence run.
+- `docs/architecture/testnet-evidence-report-btcusdt-next15.md` and `docs/architecture/testnet-evidence-report-btcusdt-next16.md` for scenario-specific BTCUSDT report drafts.
 
 ### Pre-flight
 

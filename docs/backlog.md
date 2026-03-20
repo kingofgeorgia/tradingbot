@@ -20,25 +20,22 @@
 
 ### High Impact / Low Effort
 
-- `NOW-15` Добавить state backup snapshot перед любым manual repair действием.
-- `NEXT-06` Добавить startup summary notification после reconciliation.
-- `NOW-18` Добавить idempotency tests для повторного startup reconciliation без лишних side effects.
-- `NEXT-09` Добавить alert cooldown policy для повторяющихся startup/runtime alerts.
+- Сейчас в этой секции оставляем только незакрытые идеи. Закрытые `NOW-*` и `NEXT-*` задачи отражены ниже в основных секциях и в [architecture/changelog.md](./architecture/changelog.md).
 
 ### High Impact / Medium Effort
 
-- `NEXT-19` Добавить dry-run режим для `repair` и `unblock`.
-- `NOW-17` Добавить subprocess-level CLI smoke tests для operator commands.
-- `NEXT-07` Добавить recovery path для битого или частично несовместимого `state.json`.
+- `LATER-06` Добавить manual review queue для unresolved startup/runtime issues.
+- `LATER-07` Добавить graceful degradation mode при частичной недоступности exchange API.
 
 ### Medium Impact / Medium Effort
 
-- `NEXT-08` Добавить per-symbol runtime status categories и более подробный inspect output.
-- `LATER-06` Добавить manual review queue для unresolved startup/runtime issues.
+- `LATER-02` Сделать отдельный backtesting harness для strategy layer без смешивания с runtime execution кодом.
+- `LATER-04` Поддержать несколько стратегий через явный strategy registry, если появится второй реальный strategy flow.
 
 ### Medium Impact / Higher Effort
 
-- `LATER-07` Добавить graceful degradation mode при частичной недоступности exchange API.
+- `LATER-01` Добавить SQLite/Postgres event store, если CSV-журналов перестанет хватать для аудита и аналитики.
+- `LATER-05` Добавить richer analytics по сделкам, recovery incidents и blocked-symbol history.
 
 ## Now
 
@@ -137,17 +134,17 @@
 	owner: user
 	status: blocked
 	target: 2026-04-25
-	note: точный manual checklist подготовлен в `docs/architecture/operator-playbook.md`
+	note: manual checklist в `docs/architecture/operator-playbook.md`, quick runbook в `docs/architecture/operator-testnet-quick-runbook.md`, сценарный отчет в `docs/architecture/testnet-evidence-report-btcusdt-next15.md`
 - `NEXT-16` Прогнать testnet-сценарий `exchange position restored into local state` и обновить operator playbook.
 	owner: user
 	status: blocked
 	target: 2026-04-25
-	note: точный manual checklist подготовлен в `docs/architecture/operator-playbook.md`
+	note: manual checklist в `docs/architecture/operator-playbook.md`, quick runbook в `docs/architecture/operator-testnet-quick-runbook.md`, сценарный отчет в `docs/architecture/testnet-evidence-report-btcusdt-next16.md`
 - `NEXT-17` Проверить поведение signal/trade/error/reconciliation/repair CSV при длительном runtime и задокументировать policy ротации.
 	owner: user
 	status: blocked
 	target: 2026-04-27
-	note: точный manual checklist подготовлен в `docs/architecture/operator-playbook.md`
+	note: manual checklist в `docs/architecture/operator-playbook.md`, полный PowerShell runbook в `docs/architecture/operator-testnet-powershell-runbook.md`, общий шаблон отчета в `docs/architecture/testnet-evidence-report-template.md`
 - `NEXT-18` Добавить короткий operational checklist для ревизии логов и журналов после runtime smoke.
 	owner: copilot
 	status: done
