@@ -106,6 +106,14 @@
 
 ## Next
 
+Resume note for blocked manual tasks `NEXT-15..17`:
+
+- Возвращаться к ним по `docs/architecture/operator-testnet-manual-execution-order.md`.
+- Рекомендованный порядок: `NEXT-15` -> `NEXT-16` -> `NEXT-17`.
+- Перед возобновлением подтвердить `APP_MODE=demo`, отсутствие второго bot process и отдельный evidence directory под каждый сценарий.
+- Не закрывать item без двух вещей одновременно: заполненный scenario report и сохраненный evidence directory в `artifacts/manual-testnet/`.
+- Если фактическое поведение отличается от ожидаемого, item не закрывать, а дописывать observed deviation в backlog note и в operator docs.
+
 - `NEXT-01` Ввести `schema_version` в state payload и backward-compatible migration path.
 	owner: copilot
 	status: done
@@ -167,16 +175,19 @@
 	status: blocked
 	target: 2026-04-25
 	note: manual checklist в `docs/architecture/operator-playbook.md`, fixed snippet в `docs/architecture/operator-testnet-next15-btcusdt-snippet.md`, quick runbook в `docs/architecture/operator-testnet-quick-runbook.md`, сценарный отчет в `docs/architecture/testnet-evidence-report-btcusdt-next15.md`
+	resume-steps: 1) создать новый evidence dir `artifacts/manual-testnet/quick-<timestamp>-NEXT-15-BTCUSDT`, 2) сохранить `inspect-before.json`, 3) сохранить `next15-drop-dry-run.txt`, 4) прогнать `startup-check-only`, 5) сохранить `inspect-after.txt` и `inspect-after.json`, 6) зафиксировать решение `leave blocked` или `drop-local-state`, 7) заполнить `docs/architecture/testnet-evidence-report-btcusdt-next15.md`
 - `NEXT-16` Прогнать testnet-сценарий `exchange position restored into local state` и обновить operator playbook.
 	owner: user
 	status: blocked
 	target: 2026-04-25
 	note: manual checklist в `docs/architecture/operator-playbook.md`, quick runbook в `docs/architecture/operator-testnet-quick-runbook.md`, сценарный отчет в `docs/architecture/testnet-evidence-report-btcusdt-next16.md`
+	resume-steps: 1) создать новый evidence dir `artifacts/manual-testnet/quick-<timestamp>-NEXT-16-BTCUSDT`, 2) сохранить `inspect-before.json`, 3) прогнать `startup-check-only`, 4) сохранить `inspect-after.txt` и `inspect-after.json`, 5) сохранить `next16-restore-dry-run.txt`, 6) записать restored quantity или причину failed/manual restore path, 7) заполнить `docs/architecture/testnet-evidence-report-btcusdt-next16.md`
 - `NEXT-17` Проверить поведение signal/trade/error/reconciliation/repair CSV при длительном runtime и задокументировать policy ротации.
 	owner: user
 	status: blocked
 	target: 2026-04-27
 	note: manual checklist в `docs/architecture/operator-playbook.md`, полный PowerShell runbook в `docs/architecture/operator-testnet-powershell-runbook.md`, quick runbook в `docs/architecture/operator-testnet-next17-quick-runbook.md`, общий шаблон отчета в `docs/architecture/testnet-evidence-report-template.md`, сценарный отчет в `docs/architecture/testnet-evidence-report-btcusdt-next17.md`
+	resume-steps: 1) создать новый evidence dir `artifacts/manual-testnet/next17-<timestamp>`, 2) сохранить `inspect-before.json`, 3) прогнать long runtime observation, 4) сохранить `inspect-after.json`, 5) сохранить `checkpoint-metrics.json` и `checkpoint-metrics.txt`, 6) скопировать итоговые CSV/log artifacts, 7) выбрать rotation threshold по фактическому росту файлов, 8) заполнить `docs/architecture/testnet-evidence-report-btcusdt-next17.md`
 - `NEXT-18` Добавить короткий operational checklist для ревизии логов и журналов после runtime smoke.
 	owner: copilot
 	status: done
