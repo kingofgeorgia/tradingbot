@@ -76,7 +76,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 ### Core Layer
 
 - [src/binance_bot/core/exchange.py](../src/binance_bot/core/exchange.py) — exchange error и protocol-based port contracts для runtime/services/use-cases. Ключевые сущности: `ExchangeAPIError`, `ExchangeExecutionPort`, `ExchangeMarketDataPort`, `ExchangeReconciliationPort`, `ExchangeRuntimePort`.
-- [src/binance_bot/core/models.py](../src/binance_bot/core/models.py) — domain models и persistent runtime state, включая `schema_version` в `BotState`. Ключевые классы: `Candle`, `SymbolFilters`, `Position`, `ExchangePositionSnapshot`, `StartupIssue`, `SymbolRuntimeStatus`, `ReconciliationResult`, `RepairRecord`, `RuntimeStatusReport`, `BotState`.
+- [src/binance_bot/core/models.py](../src/binance_bot/core/models.py) — domain models и persistent runtime state, включая `schema_version` в `BotState` и per-symbol runtime categories в `RuntimeStatusReport`. Ключевые классы: `Candle`, `SymbolFilters`, `Position`, `ExchangePositionSnapshot`, `StartupIssue`, `SymbolRuntimeStatus`, `ReconciliationResult`, `RepairRecord`, `RuntimeStatusReport`, `BotState`.
 - [src/binance_bot/core/state.py](../src/binance_bot/core/state.py) — JSON persistence layer с migration boundary по `schema_version` и recovery backup path для битого/несовместимого state payload. Ключевые сущности: `StateLoadError`, `StateStore`, `load()`, `recover(...)`, `save(state)`, `migrate_state_payload(...)`.
 - [src/binance_bot/core/journal.py](../src/binance_bot/core/journal.py) — append-only CSV journaling. Ключевые сущности: `CsvJournal`, `write(row)`.
 - [src/binance_bot/core/logging_setup.py](../src/binance_bot/core/logging_setup.py) — настройка логгеров. Ключевые сущности: `Loggers`, `configure_logging(...)`.
@@ -126,7 +126,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 
 - [src/binance_bot/services/reconciliation.py](../src/binance_bot/services/reconciliation.py) — startup reconciliation и блокировка mismatch scenarios. Ключевые сущности: `load_exchange_snapshot(...)`, `reconcile_symbol_state(...)`, `reconcile_runtime_state(...)`, `apply_reconciliation_result(...)`.
 - [src/binance_bot/services/repair.py](../src/binance_bot/services/repair.py) — manual repair и unblock flow. Ключевые сущности: `inspect_runtime_issues(...)`, `acknowledge_issue(...)`, `repair_symbol_state(...)`, `unblock_symbol(...)`, `_backup_state_before_manual_action(...)`.
-- [src/binance_bot/services/status.py](../src/binance_bot/services/status.py) — status summary для `inspect` и heartbeat notifications. Ключевые сущности: `build_runtime_status_report(...)`, `format_status_report(...)`, `format_runtime_health_notification(...)`.
+- [src/binance_bot/services/status.py](../src/binance_bot/services/status.py) — status summary для `inspect`, per-symbol runtime categories и heartbeat notifications. Ключевые сущности: `build_runtime_status_report(...)`, `format_status_report(...)`, `format_runtime_health_notification(...)`, `format_startup_summary_notification(...)`.
 - [docs/architecture/operator-playbook.md](./architecture/operator-playbook.md) — playbook для ручной работы с проблемными символами.
 
 Порядок работы:
@@ -139,6 +139,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 Policy note:
 - `SYMBOL_POLICY_OVERRIDES` принимает JSON-объект по символам, например `{"BTCUSDT":{"runtime_mode":"observe-only","risk_per_trade_pct":0.02,"max_position_pct":0.05}}`.
 - Per-symbol `runtime_mode` не может ослабить глобальный `RUNTIME_MODE`; effective mode для символа всегда выбирается как более строгий из двух.
+- `inspect` теперь показывает по каждому symbol его runtime category (`ready`, `position-open`, `suspect`, `blocked`), effective mode, issue/acknowledgement status и last manual action.
 
 Навигация: [к модулю](#modules) | [к тестам](#tests) | [к содержанию](#содержание)
 

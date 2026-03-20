@@ -98,6 +98,11 @@ class SymbolRuntimeStatus:
     blocked: bool
     suspect_position: bool
     reason: str
+    effective_runtime_mode: str = "trade"
+    has_open_position: bool = False
+    startup_issue_key: str | None = None
+    issue_acknowledged: bool = False
+    last_manual_action: str | None = None
 
 
 @dataclass(slots=True)
@@ -139,6 +144,7 @@ class RuntimeStatusReport:
     suspect_positions: dict[str, str]
     open_positions: list[str]
     startup_issue_keys: list[str]
+    symbol_statuses: list[SymbolRuntimeStatus]
     last_reconciled_at: str | None
     last_reconciliation_status: str | None
     last_manual_review_at: str | None

@@ -30,6 +30,7 @@ def reconcile_symbol_state(*, symbol: str, local_position, exchange_snapshot: Ex
             blocked=False,
             suspect_position=False,
             reason=decision.reason,
+            has_open_position=local_position is not None,
         )
         return status, None, None
 
@@ -50,6 +51,8 @@ def reconcile_symbol_state(*, symbol: str, local_position, exchange_snapshot: Ex
         blocked=block_decision.blocked,
         suspect_position=block_decision.suspect_position,
         reason=decision.reason,
+        has_open_position=local_position is not None or decision.action == "restore-position",
+        startup_issue_key=issue.issue_key,
     )
     restore_snapshot = exchange_snapshot if decision.action == "restore-position" else None
     return status, issue, restore_snapshot
@@ -70,6 +73,7 @@ def reconcile_runtime_state(*, settings, client: ExchangeReconciliationPort, sta
                 blocked=True,
                 suspect_position=symbol in state.open_positions,
                 reason=reason,
+                has_open_position=local_position is not None,
             )
             result.blocked_symbols[symbol] = reason
             if symbol in state.open_positions:

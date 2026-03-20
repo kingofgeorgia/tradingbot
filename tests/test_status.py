@@ -23,6 +23,9 @@ class StatusTests(unittest.TestCase):
     def test_status_report_includes_blocked_symbols_and_issues(self) -> None:
         settings = make_settings()
         settings.runtime_mode = "no-new-entries"
+        settings.symbol_policy_overrides = {
+            "BTCUSDT": type("Override", (), {"runtime_mode": "observe-only", "risk_per_trade_pct": None, "max_position_pct": None})()
+        }
         state = BotState(
             blocked_symbols={"BTCUSDT": "quantity-mismatch"},
             startup_issues=[
@@ -36,6 +39,8 @@ class StatusTests(unittest.TestCase):
                     message="qty mismatch",
                 )
             ],
+            last_manual_action_by_symbol={"BTCUSDT": "acknowledge"},
+            acknowledged_startup_issues=["BTCUSDT:quantity-mismatch:block-symbol"],
         )
 
         report = build_runtime_status_report(settings=settings, state=state)
@@ -44,6 +49,11 @@ class StatusTests(unittest.TestCase):
         self.assertIn("Runtime mode: no-new-entries", text)
         self.assertIn("Blocked symbols: BTCUSDT", text)
         self.assertIn("BTCUSDT:quantity-mismatch:block-symbol", text)
+        self.assertIn("Per-symbol status:", text)
+        self.assertIn("BTCUSDT: category=blocked; effective_mode=observe-only", text)
+        self.assertIn("acknowledged=yes", text)
+        self.assertIn("last_manual_action=acknowledge", text)
+        self.assertIn("ETHUSDT: category=ready; effective_mode=no-new-entries", text)
 
     def test_runtime_health_notification_includes_blocked_symbols_and_cycle(self) -> None:
         settings = make_settings()

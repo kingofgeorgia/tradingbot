@@ -15,6 +15,7 @@
 - Operator workflow для `inspect`, `acknowledge`, `repair` и `unblock` по проблемным символам.
 - Версионированный `state.json` с `schema_version` и backward-compatible migration path для локального runtime state.
 - Автоматический recovery path для битого или несовместимого `state.json`: backup исходного файла, reset в пустой local state и operator notification.
+- Более подробный `inspect` output с per-symbol runtime status categories, effective runtime mode и operator-context по каждому symbol.
 - Настраиваемые heartbeat/summary notifications по runtime health и blocked symbols.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
@@ -31,7 +32,7 @@
 - `src/binance_bot/services/runtime.py` — composition root, жизненный цикл приложения и startup recovery для невалидного `state.json`.
 - `src/binance_bot/services/reconciliation.py` — startup/restart reconciliation и safety guard перед loop.
 - `src/binance_bot/services/repair.py` — manual repair flow для blocked symbols и startup issues.
-- `src/binance_bot/services/status.py` — runtime status summary для operator flow и observability.
+- `src/binance_bot/services/status.py` — runtime status summary, per-symbol runtime categories и formatters для operator flow/observability.
 - `src/binance_bot/services/cycle.py` — orchestration одного торгового цикла.
 - `src/binance_bot/services/position_monitor.py` — исполнение решений по открытым позициям.
 - `src/binance_bot/services/error_handler.py` — единая запись и уведомление по API-ошибкам.

@@ -12,7 +12,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from binance_bot.core.models import BotState, ExchangePositionSnapshot, Position, StartupIssue
-from binance_bot.services.repair import acknowledge_issue, repair_symbol_state, unblock_symbol
+from binance_bot.services.repair import acknowledge_issue, inspect_runtime_issues, repair_symbol_state, unblock_symbol
 from tests.fakes import FakeBinanceClient, FakeJournal, FakeLoggers, FakeStateStore, make_settings
 
 
@@ -87,6 +87,23 @@ class RepairFlowTests(unittest.TestCase):
         self.assertIn("Acknowledged", message)
         self.assertEqual(len(self.state.acknowledged_startup_issues), 1)
         self.assertEqual(self.state.last_manual_action_by_symbol["BTCUSDT"], "acknowledge")
+
+    def test_inspect_runtime_issues_includes_per_symbol_runtime_categories(self) -> None:
+        self.state.suspect_positions = {"BTCUSDT": "exchange-position-without-local-state"}
+        self.state.last_manual_action_by_symbol["BTCUSDT"] = "acknowledge"
+        self.state.acknowledged_startup_issues = [self.state.startup_issues[0].issue_key]
+
+        report = inspect_runtime_issues(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+        )
+
+        self.assertIn("Per-symbol status:", report)
+        self.assertIn("BTCUSDT: category=blocked", report)
+        self.assertIn("issue=BTCUSDT:exchange-position-without-local-state:block-symbol", report)
+        self.assertIn("acknowledged=yes", report)
+        self.assertIn("last_manual_action=acknowledge", report)
 
     def test_restore_from_exchange_clears_issue_and_restores_position(self) -> None:
         message = repair_symbol_state(

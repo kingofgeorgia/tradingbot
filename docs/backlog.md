@@ -107,8 +107,8 @@
 	target: 2026-03-20
 - `NEXT-08` Добавить per-symbol runtime status categories и более подробный inspect output.
 	owner: copilot
-	status: todo
-	target: 2026-04-18
+	status: done
+	target: 2026-03-20
 - `NEXT-09` Добавить alert cooldown policy для повторяющихся startup/runtime alerts.
 	owner: copilot
 	status: todo
