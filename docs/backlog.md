@@ -137,14 +137,17 @@
 	owner: user
 	status: blocked
 	target: 2026-04-25
+	note: точный manual checklist подготовлен в `docs/architecture/operator-playbook.md`
 - `NEXT-16` Прогнать testnet-сценарий `exchange position restored into local state` и обновить operator playbook.
 	owner: user
 	status: blocked
 	target: 2026-04-25
+	note: точный manual checklist подготовлен в `docs/architecture/operator-playbook.md`
 - `NEXT-17` Проверить поведение signal/trade/error/reconciliation/repair CSV при длительном runtime и задокументировать policy ротации.
 	owner: user
 	status: blocked
 	target: 2026-04-27
+	note: точный manual checklist подготовлен в `docs/architecture/operator-playbook.md`
 - `NEXT-18` Добавить короткий operational checklist для ревизии логов и журналов после runtime smoke.
 	owner: copilot
 	status: done
