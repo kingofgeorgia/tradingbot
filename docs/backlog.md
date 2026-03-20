@@ -111,8 +111,8 @@
 	target: 2026-03-20
 - `NEXT-09` Добавить alert cooldown policy для повторяющихся startup/runtime alerts.
 	owner: copilot
-	status: todo
-	target: 2026-04-20
+	status: done
+	target: 2026-03-20
 - `NEXT-10` Добавить `inspect --json` для машиночитаемого runtime status.
 	owner: copilot
 	status: todo

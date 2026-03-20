@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from binance_bot.core.decisions import decide_risk_entry, decide_signal_action
 from binance_bot.core.exchange import ExchangeAPIError, ExchangeRuntimePort
+from binance_bot.services.alerts import send_alert_with_cooldown
 from binance_bot.services.error_handler import record_api_error
 from binance_bot.services.position_monitor import manage_open_positions
 
@@ -26,6 +27,8 @@ def process_cycle(
     portfolio_snapshot = _load_portfolio_snapshot(
         client=client,
         settings=settings,
+        state=state,
+        state_store=state_store,
         errors_journal=errors_journal,
         notifier=notifier,
         loggers=loggers,
@@ -62,7 +65,18 @@ def process_cycle(
             last_processed_candle = state.last_processed_candle.get(symbol)
             signal = strategy.evaluate(symbol, candles, last_processed_candle)
         except ExchangeAPIError as exc:
-            record_api_error(errors_journal, notifier, loggers, settings.app_mode, "market-data", symbol, exc)
+            record_api_error(
+                errors_journal,
+                notifier,
+                loggers,
+                settings.app_mode,
+                "market-data",
+                symbol,
+                exc,
+                settings=settings,
+                state=state,
+                state_store=state_store,
+            )
             continue
 
         if signal.candle_close_time:
@@ -117,12 +131,23 @@ def process_cycle(
         )
 
 
-def _load_portfolio_snapshot(*, client: ExchangeRuntimePort, settings, errors_journal, notifier, loggers):
+def _load_portfolio_snapshot(*, client: ExchangeRuntimePort, settings, state, state_store, errors_journal, notifier, loggers):
     try:
         total_equity = client.get_portfolio_value(settings.symbols, settings.quote_asset)
         free_quote_balance = client.get_asset_free_balance(settings.quote_asset)
     except ExchangeAPIError as exc:
-        record_api_error(errors_journal, notifier, loggers, settings.app_mode, "portfolio", "", exc)
+        record_api_error(
+            errors_journal,
+            notifier,
+            loggers,
+            settings.app_mode,
+            "portfolio",
+            "",
+            exc,
+            settings=settings,
+            state=state,
+            state_store=state_store,
+        )
         return None
     return total_equity, free_quote_balance
 
@@ -147,9 +172,26 @@ def _handle_sell_signal(
     try:
         halt_reason = order_manager.close_position(symbol, reason, state)
         state_store.save(state)
-        _notify_halt_reason(halt_reason, settings.app_mode, notifier)
+        _notify_halt_reason(
+            halt_reason,
+            settings=settings,
+            state=state,
+            state_store=state_store,
+            notifier=notifier,
+        )
     except ExchangeAPIError as exc:
-        record_api_error(errors_journal, notifier, loggers, settings.app_mode, "close-position", symbol, exc)
+        record_api_error(
+            errors_journal,
+            notifier,
+            loggers,
+            settings.app_mode,
+            "close-position",
+            symbol,
+            exc,
+            settings=settings,
+            state=state,
+            state_store=state_store,
+        )
 
 
 def _handle_buy_signal(
@@ -188,11 +230,36 @@ def _handle_buy_signal(
         order_manager.open_long(signal, filters, state, total_equity, free_quote_balance)
         state_store.save(state)
     except (ExchangeAPIError, ValueError) as exc:
-        record_api_error(errors_journal, notifier, loggers, settings.app_mode, "open-position", symbol, exc)
+        record_api_error(
+            errors_journal,
+            notifier,
+            loggers,
+            settings.app_mode,
+            "open-position",
+            symbol,
+            exc,
+            settings=settings,
+            state=state,
+            state_store=state_store,
+        )
 
 
-def _notify_halt_reason(halt_reason: str | None, app_mode: str, notifier) -> None:
+def _notify_halt_reason(halt_reason: str | None, *, settings, state, state_store, notifier) -> None:
     if halt_reason == "daily-loss-limit-reached":
-        notifier.send(f"[{app_mode}] Daily loss limit reached.\nNew entries are blocked until next day.")
+        send_alert_with_cooldown(
+            settings=settings,
+            state=state,
+            state_store=state_store,
+            notifier=notifier,
+            alert_key="runtime-halt:daily-loss-limit-reached",
+            message=f"[{settings.app_mode}] Daily loss limit reached.\nNew entries are blocked until next day.",
+        )
     elif halt_reason == "max-consecutive-losses-reached":
-        notifier.send(f"[{app_mode}] Three consecutive losses reached.\nNew entries are blocked until next day.")
+        send_alert_with_cooldown(
+            settings=settings,
+            state=state,
+            state_store=state_store,
+            notifier=notifier,
+            alert_key="runtime-halt:max-consecutive-losses-reached",
+            message=f"[{settings.app_mode}] Three consecutive losses reached.\nNew entries are blocked until next day.",
+        )

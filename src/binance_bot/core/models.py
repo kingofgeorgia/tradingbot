@@ -166,6 +166,7 @@ class BotState:
     startup_issues: list[StartupIssue] = field(default_factory=list)
     acknowledged_startup_issues: list[str] = field(default_factory=list)
     alerted_startup_issues: list[str] = field(default_factory=list)
+    alert_cooldowns: dict[str, str] = field(default_factory=dict)
     repair_history: list[RepairRecord] = field(default_factory=list)
     last_reconciled_at: str | None = None
     last_reconciliation_status: str | None = None
@@ -188,6 +189,7 @@ class BotState:
             "startup_issues": [issue.to_dict() for issue in self.startup_issues],
             "acknowledged_startup_issues": self.acknowledged_startup_issues,
             "alerted_startup_issues": self.alerted_startup_issues,
+            "alert_cooldowns": self.alert_cooldowns,
             "repair_history": [record.to_dict() for record in self.repair_history],
             "last_reconciled_at": self.last_reconciled_at,
             "last_reconciliation_status": self.last_reconciliation_status,
@@ -232,6 +234,7 @@ class BotState:
             startup_issues=startup_issues,
             acknowledged_startup_issues=[str(item) for item in payload.get("acknowledged_startup_issues", [])],
             alerted_startup_issues=[str(item) for item in payload.get("alerted_startup_issues", [])],
+            alert_cooldowns={str(key): str(value) for key, value in payload.get("alert_cooldowns", {}).items()},
             repair_history=repair_history,
             last_reconciled_at=payload.get("last_reconciled_at"),
             last_reconciliation_status=payload.get("last_reconciliation_status"),

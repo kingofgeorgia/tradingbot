@@ -9,6 +9,7 @@ from binance_bot.core.models import (
     StartupIssue,
     SymbolRuntimeStatus,
 )
+from binance_bot.services.alerts import send_alert_with_cooldown
 from binance_bot.services.error_handler import utc_now_iso
 
 
@@ -147,6 +148,11 @@ def apply_reconciliation_result(
     state.alerted_startup_issues = [
         issue_key for issue_key in state.alerted_startup_issues if issue_key in current_issue_keys
     ]
+    state.alert_cooldowns = {
+        key: value
+        for key, value in state.alert_cooldowns.items()
+        if not key.startswith("startup-issue:") or key.removeprefix("startup-issue:") in current_issue_keys
+    }
     state.last_reconciled_at = utc_now_iso()
     state.last_reconciliation_status = result.status
 
@@ -159,6 +165,7 @@ def apply_reconciliation_result(
             notifier=notifier,
             loggers=loggers,
             state=state,
+            state_store=state_store,
             previous_issue_keys=previous_issue_keys,
         )
 
@@ -183,6 +190,7 @@ def _record_reconciliation_issue(
     notifier,
     loggers,
     state,
+    state_store,
     previous_issue_keys: set[str],
 ) -> None:
     reconciliation_journal.write(
@@ -200,11 +208,18 @@ def _record_reconciliation_issue(
 
     if issue.status == "resolved":
         loggers.app.info("Recovered %s from exchange snapshot.", issue.symbol)
-        notifier.send(
-            f"[{settings.app_mode}] Recovered from exchange for {issue.symbol}\n"
-            f"Action: {issue.action}\n"
-            f"Local qty: {issue.local_qty:.8f}\n"
-            f"Exchange qty: {issue.exchange_qty:.8f}"
+        send_alert_with_cooldown(
+            settings=settings,
+            state=state,
+            state_store=state_store,
+            notifier=notifier,
+            alert_key=f"startup-recovered:{issue.symbol}:{issue.issue_type}",
+            message=(
+                f"[{settings.app_mode}] Recovered from exchange for {issue.symbol}\n"
+                f"Action: {issue.action}\n"
+                f"Local qty: {issue.local_qty:.8f}\n"
+                f"Exchange qty: {issue.exchange_qty:.8f}"
+            ),
         )
         return
 
@@ -221,16 +236,20 @@ def _record_reconciliation_issue(
     )
     if issue.issue_key in state.acknowledged_startup_issues:
         return
-    if issue.issue_key in state.alerted_startup_issues:
-        return
-    if issue.issue_key not in previous_issue_keys:
+    if send_alert_with_cooldown(
+        settings=settings,
+        state=state,
+        state_store=state_store,
+        notifier=notifier,
+        alert_key=f"startup-issue:{issue.issue_key}",
+        message=(
+            f"[{settings.app_mode}] Startup mismatch for {issue.symbol}\n"
+            f"Issue: {issue.issue_type}\n"
+            f"Action: {issue.action}\n"
+            "Manual intervention required."
+        ),
+    ) and issue.issue_key not in previous_issue_keys and issue.issue_key not in state.alerted_startup_issues:
         state.alerted_startup_issues.append(issue.issue_key)
-    notifier.send(
-        f"[{settings.app_mode}] Startup mismatch for {issue.symbol}\n"
-        f"Issue: {issue.issue_type}\n"
-        f"Action: {issue.action}\n"
-        f"Manual intervention required."
-    )
 
 
 def _build_issue_message(symbol: str, reason: str, local_qty: float, exchange_qty: float) -> str:

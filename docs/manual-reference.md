@@ -81,6 +81,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - [src/binance_bot/core/journal.py](../src/binance_bot/core/journal.py) — append-only CSV journaling. Ключевые сущности: `CsvJournal`, `write(row)`.
 - [src/binance_bot/core/logging_setup.py](../src/binance_bot/core/logging_setup.py) — настройка логгеров. Ключевые сущности: `Loggers`, `configure_logging(...)`.
 - [src/binance_bot/core/errors.py](../src/binance_bot/core/errors.py) — классификация runtime errors с policy reaction и notification routing. Ключевые сущности: `ErrorDescriptor`, `classify_runtime_error(...)`.
+- [src/binance_bot/services/alerts.py](../src/binance_bot/services/alerts.py) — cooldown policy для repeated startup/runtime alerts. Ключевые сущности: `send_alert_with_cooldown(...)`, `should_send_alert(...)`.
 - [src/binance_bot/core/rounding.py](../src/binance_bot/core/rounding.py) — единая step-size rounding logic. Ключевая функция: `round_down_to_step(...)`.
 - [src/binance_bot/core/trade_execution.py](../src/binance_bot/core/trade_execution.py) — pure result models для BUY/SELL execution. Ключевые сущности: `OpenPositionResult`, `ClosePositionResult`, `build_open_position_result(...)`, `calculate_close_result(...)`.
 - [src/binance_bot/core/decisions.py](../src/binance_bot/core/decisions.py) — pure decision layer. Ключевые сущности: `RiskDecision`, `CloseDecision`, `SignalDecision`, `ReconciliationDecision`, `SymbolBlockDecision`, `StateRepairDecision`, `ManualRepairDecision`, `IssueAcknowledgementDecision`, `decide_risk_entry(...)`, `decide_position_close(...)`, `decide_signal_action(...)`, `decide_state_repair(...)`, `decide_reconciliation_action(...)`, `decide_symbol_block(...)`, `decide_manual_repair_action(...)`, `decide_unblock_allowed(...)`, `decide_issue_acknowledgement(...)`.
@@ -140,6 +141,7 @@ Policy note:
 - `SYMBOL_POLICY_OVERRIDES` принимает JSON-объект по символам, например `{"BTCUSDT":{"runtime_mode":"observe-only","risk_per_trade_pct":0.02,"max_position_pct":0.05}}`.
 - Per-symbol `runtime_mode` не может ослабить глобальный `RUNTIME_MODE`; effective mode для символа всегда выбирается как более строгий из двух.
 - `inspect` теперь показывает по каждому symbol его runtime category (`ready`, `position-open`, `suspect`, `blocked`), effective mode, issue/acknowledgement status и last manual action.
+- `ALERT_COOLDOWN_SECONDS` задает suppression window для повторяющихся startup/runtime alerts с одинаковым alert key; `0` отключает cooldown.
 
 Навигация: [к модулю](#modules) | [к тестам](#tests) | [к содержанию](#содержание)
 

@@ -231,6 +231,7 @@ class StateRecoveryTests(unittest.TestCase):
 
         recovered_state = self.store.load()
         expected_state = BotState()
+        expected_state.alert_cooldowns = recovered_state.alert_cooldowns
         expected_state.repair_history = recovered_state.repair_history
 
         self.assertEqual(recovered_state.to_dict(), expected_state.to_dict())

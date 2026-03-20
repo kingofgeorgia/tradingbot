@@ -430,6 +430,76 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(state.startup_issues[0].issue_key, state.alerted_startup_issues[0])
         self.assertEqual(state.last_reconciliation_status, "blocked-symbols-present")
 
+    def test_reconciliation_realerts_after_cooldown_window(self) -> None:
+        state = BotState(
+            open_positions={
+                "BTCUSDT": Position(
+                    symbol="BTCUSDT",
+                    quantity=0.25,
+                    entry_price=100.0,
+                    stop_loss=98.0,
+                    take_profit=104.0,
+                    opened_at="2026-03-20T10:00:00+00:00",
+                    order_id=1,
+                    mode="demo",
+                    quote_spent=25.0,
+                    fee_paid_quote=0.1,
+                )
+            }
+        )
+        self.client.position_snapshots["BTCUSDT"] = ExchangePositionSnapshot(
+            symbol="BTCUSDT",
+            base_asset="BTC",
+            exchange_quantity=0.0,
+            average_entry_price=None,
+            last_order_id=None,
+            last_trade_time=None,
+            has_open_orders=False,
+            has_recent_trades=False,
+            step_size=0.001,
+        )
+        self.client.position_snapshots["ETHUSDT"] = ExchangePositionSnapshot(
+            symbol="ETHUSDT",
+            base_asset="ETH",
+            exchange_quantity=0.0,
+            average_entry_price=None,
+            last_order_id=None,
+            last_trade_time=None,
+            has_open_orders=False,
+            has_recent_trades=False,
+            step_size=0.001,
+        )
+
+        first_result = reconcile_runtime_state(settings=self.settings, client=self.client, state=state)
+        apply_reconciliation_result(
+            settings=self.settings,
+            state=state,
+            state_store=self.state_store,
+            order_manager=self.order_manager,
+            result=first_result,
+            reconciliation_journal=self.reconciliation_journal,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        issue_key = state.startup_issues[0].issue_key
+        state.alert_cooldowns[f"startup-issue:{issue_key}"] = "2026-03-19T00:00:00+00:00"
+        second_result = reconcile_runtime_state(settings=self.settings, client=self.client, state=state)
+        apply_reconciliation_result(
+            settings=self.settings,
+            state=state,
+            state_store=self.state_store,
+            order_manager=self.order_manager,
+            result=second_result,
+            reconciliation_journal=self.reconciliation_journal,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(len(self.notifier.messages), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

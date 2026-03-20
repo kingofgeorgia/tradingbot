@@ -17,6 +17,7 @@ from binance_bot.risk.manager import RiskManager
 from binance_bot.strategy.ema_cross import EmaCrossStrategy
 
 from binance_bot.services.cycle import process_cycle
+from binance_bot.services.alerts import send_alert_with_cooldown
 from binance_bot.services.error_handler import record_api_error
 from binance_bot.services.reconciliation import apply_reconciliation_result, reconcile_runtime_state
 from binance_bot.services.status import (
@@ -87,11 +88,18 @@ def ensure_runtime_state_file(
     state_store.save(recovered_state)
 
     loggers.error.error(note)
-    notifier.send(
-        f"[{settings.app_mode}] State file recovery applied\n"
-        f"Reason: {error_message}\n"
-        f"Backup: {backup_label}\n"
-        "Runtime state reset to empty local snapshot"
+    send_alert_with_cooldown(
+        settings=settings,
+        state=recovered_state,
+        state_store=state_store,
+        notifier=notifier,
+        alert_key="runtime-state-recovery",
+        message=(
+            f"[{settings.app_mode}] State file recovery applied\n"
+            f"Reason: {error_message}\n"
+            f"Backup: {backup_label}\n"
+            "Runtime state reset to empty local snapshot"
+        ),
     )
 
 
@@ -252,6 +260,9 @@ def run_loop(runtime: AppRuntime) -> None:
                 "main-loop",
                 "",
                 exc,
+                settings=runtime.settings,
+                state=state,
+                state_store=runtime.state_store,
             )
             raise
 

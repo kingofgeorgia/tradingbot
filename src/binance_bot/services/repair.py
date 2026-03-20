@@ -129,6 +129,11 @@ def _resolve_issue_for_symbol(state, symbol: str) -> None:
     state.alerted_startup_issues = [
         issue_key for issue_key in state.alerted_startup_issues if issue_key not in resolved_issue_keys
     ]
+    state.alert_cooldowns = {
+        key: value
+        for key, value in state.alert_cooldowns.items()
+        if not key.startswith("startup-issue:") or key.removeprefix("startup-issue:") not in resolved_issue_keys
+    }
 
 
 def _record_repair_action(*, settings, state, repair_journal, symbol: str, action: str, status: str, note: str) -> None:

@@ -462,6 +462,53 @@ class CycleTests(unittest.TestCase):
 
         self.assertIn("Daily loss limit reached.", self.notifier.messages[0])
 
+    def test_repeated_halt_reason_respects_alert_cooldown(self) -> None:
+        self.state.open_positions["BTCUSDT"] = Position(
+            symbol="BTCUSDT",
+            quantity=0.25,
+            entry_price=100.0,
+            stop_loss=98.0,
+            take_profit=104.0,
+            opened_at="2026-03-19T12:00:00+00:00",
+            order_id=1,
+            mode="demo",
+            quote_spent=25.0,
+            fee_paid_quote=0.1,
+        )
+        self.client.latest_prices["BTCUSDT"] = 100.0
+        self.strategy.signals_by_symbol = {
+            "BTCUSDT": TradeSignal("BTCUSDT", "SELL", "ema20-crossed-below-ema50", 100.0, 99.0, 101.0, 1710000000000),
+            "ETHUSDT": TradeSignal("ETHUSDT", "HOLD", "no-crossover", 200.0, 201.0, 199.0, 1710000005000),
+        }
+        self.order_manager.close_result = "daily-loss-limit-reached"
+
+        process_cycle(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            strategy=self.strategy,
+            risk_manager=self.risk_manager,
+            order_manager=self.order_manager,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+        process_cycle(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            strategy=self.strategy,
+            risk_manager=self.risk_manager,
+            order_manager=self.order_manager,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(len(self.notifier.messages), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

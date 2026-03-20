@@ -17,6 +17,7 @@
 - Автоматический recovery path для битого или несовместимого `state.json`: backup исходного файла, reset в пустой local state и operator notification.
 - Более подробный `inspect` output с per-symbol runtime status categories, effective runtime mode и operator-context по каждому symbol.
 - Настраиваемые heartbeat/summary notifications по runtime health и blocked symbols.
+- Cooldown policy для повторяющихся startup/runtime alerts, чтобы persistent проблемы не спамили operator channel каждый цикл.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
 - Явная runtime error policy: warning/runtime-io ошибки журналируются без operator alert, а execution/fatal ошибки получают реакцию и уведомление.
@@ -165,6 +166,7 @@ RUN_ONCE=false
 - `MAX_CONSECUTIVE_LOSSES`
 - `LOOP_INTERVAL_SECONDS`
 - `HEARTBEAT_INTERVAL_CYCLES`
+- `ALERT_COOLDOWN_SECONDS`
 - `ORDER_CONFIRM_TIMEOUT_SECONDS`
 - `REQUEST_TIMEOUT_SECONDS`
 - `STALE_DATA_MULTIPLIER`

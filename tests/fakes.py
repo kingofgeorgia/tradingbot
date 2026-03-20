@@ -253,6 +253,7 @@ def make_settings() -> Settings:
         max_consecutive_losses=3,
         loop_interval_seconds=30,
         heartbeat_interval_cycles=0,
+        alert_cooldown_seconds=300,
         order_confirm_timeout_seconds=15,
         request_timeout_seconds=15,
         stale_data_multiplier=2,

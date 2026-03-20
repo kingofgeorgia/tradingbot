@@ -13,8 +13,9 @@ if str(SRC_DIR) not in sys.path:
 
 from binance_bot.clients.binance_client import BinanceAPIError
 from binance_bot.core.errors import classify_runtime_error
+from binance_bot.core.models import BotState
 from binance_bot.services.error_handler import record_api_error
-from tests.fakes import FakeJournal, FakeLoggers, FakeNotifier
+from tests.fakes import FakeJournal, FakeLoggers, FakeNotifier, FakeStateStore, make_settings
 
 
 class ErrorHandlingPolicyTests(unittest.TestCase):
@@ -42,6 +43,9 @@ class ErrorHandlingPolicyTests(unittest.TestCase):
         errors_journal = FakeJournal()
         notifier = FakeNotifier()
         loggers = FakeLoggers()
+        settings = make_settings()
+        state = BotState()
+        state_store = FakeStateStore(state)
 
         descriptor = record_api_error(
             errors_journal,
@@ -51,12 +55,51 @@ class ErrorHandlingPolicyTests(unittest.TestCase):
             "open-position",
             "BTCUSDT",
             BinanceAPIError("order rejected"),
+            settings=settings,
+            state=state,
+            state_store=state_store,
         )
 
         self.assertEqual(descriptor.category, "execution")
         self.assertEqual(descriptor.reaction, "manual-review")
         self.assertEqual(len(notifier.messages), 1)
         self.assertIn("Reaction: manual-review", notifier.messages[0])
+
+    def test_execution_error_respects_alert_cooldown(self) -> None:
+        errors_journal = FakeJournal()
+        notifier = FakeNotifier()
+        loggers = FakeLoggers()
+        settings = make_settings()
+        state = BotState()
+        state_store = FakeStateStore(state)
+
+        record_api_error(
+            errors_journal,
+            notifier,
+            loggers,
+            "demo",
+            "open-position",
+            "BTCUSDT",
+            BinanceAPIError("order rejected"),
+            settings=settings,
+            state=state,
+            state_store=state_store,
+        )
+        record_api_error(
+            errors_journal,
+            notifier,
+            loggers,
+            "demo",
+            "open-position",
+            "BTCUSDT",
+            BinanceAPIError("order rejected"),
+            settings=settings,
+            state=state,
+            state_store=state_store,
+        )
+
+        self.assertEqual(len(notifier.messages), 1)
+        self.assertIn("runtime-error:open-position:BTCUSDT:execution", state.alert_cooldowns)
 
     def test_timeout_is_classified_as_transient_without_operator_alert(self) -> None:
         descriptor = classify_runtime_error(scope="market-data", exc=TimeoutError("request timeout"))

@@ -32,7 +32,18 @@ def manage_open_positions(
         try:
             current_price = client.get_latest_price(symbol)
         except ExchangeAPIError as exc:
-            record_api_error(errors_journal, notifier, loggers, settings.app_mode, "position-monitoring", symbol, exc)
+            record_api_error(
+                errors_journal,
+                notifier,
+                loggers,
+                settings.app_mode,
+                "position-monitoring",
+                symbol,
+                exc,
+                settings=settings,
+                state=state,
+                state_store=state_store,
+            )
             continue
 
         close_decision = decide_position_close(current_price, position.stop_loss, position.take_profit)
@@ -51,4 +62,7 @@ def manage_open_positions(
                 close_decision.error_scope or "position-close",
                 symbol,
                 exc,
+                settings=settings,
+                state=state,
+                state_store=state_store,
             )

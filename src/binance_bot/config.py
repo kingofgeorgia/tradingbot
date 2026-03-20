@@ -45,6 +45,7 @@ class Settings:
     max_consecutive_losses: int
     loop_interval_seconds: int
     heartbeat_interval_cycles: int
+    alert_cooldown_seconds: int
     order_confirm_timeout_seconds: int
     request_timeout_seconds: int
     stale_data_multiplier: int
@@ -156,6 +157,7 @@ def load_settings() -> Settings:
         max_consecutive_losses=int(os.getenv("MAX_CONSECUTIVE_LOSSES", "3")),
         loop_interval_seconds=int(os.getenv("LOOP_INTERVAL_SECONDS", "30")),
         heartbeat_interval_cycles=int(os.getenv("HEARTBEAT_INTERVAL_CYCLES", "0")),
+        alert_cooldown_seconds=int(os.getenv("ALERT_COOLDOWN_SECONDS", "300")),
         order_confirm_timeout_seconds=int(os.getenv("ORDER_CONFIRM_TIMEOUT_SECONDS", "15")),
         request_timeout_seconds=int(os.getenv("REQUEST_TIMEOUT_SECONDS", "15")),
         stale_data_multiplier=int(os.getenv("STALE_DATA_MULTIPLIER", "2")),
