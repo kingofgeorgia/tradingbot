@@ -228,6 +228,18 @@ python -m ruff check .
 
 CI в GitHub Actions использует Python 3.11, отдельно гоняет core tests, service-layer smoke, CLI/runtime smoke для startup/runtime modes, regression-проверки sample state fixtures и стабильность `inspect --json` payload.
 
+### Post-smoke checklist
+
+После runtime smoke или `RUN_ONCE=true` прогона быстро проверьте:
+
+- `logs/app.log`: есть startup summary и строка с нужным `runtime_mode`.
+- `logs/errors.log`: нет новых execution/fatal ошибок для текущего запуска.
+- `data/reconciliation.csv`: есть запись reconciliation со статусом `clean` или ожидаемым issue status.
+- `data/errors.csv`: пусто либо содержит только ожидаемые warning/runtime-io записи.
+- `data/signals.csv`: для `observe-only` и `no-new-entries` сигнал должен логироваться, даже если execution не произошло.
+- `data/trades.csv`: для `observe-only` и `no-new-entries` не должно появляться неожиданных BUY/SELL записей.
+- `data/repair.csv`: после smoke без manual actions не должно появляться новых repair/unblock записей.
+
 ## GitHub Actions
 
 - `CI` — ставит зависимости, запускает `ruff check .`, core tests, service-layer smoke и state regression smoke.

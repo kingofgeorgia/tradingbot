@@ -147,8 +147,8 @@
 	target: 2026-04-27
 - `NEXT-18` Добавить короткий operational checklist для ревизии логов и журналов после runtime smoke.
 	owner: copilot
-	status: todo
-	target: 2026-04-27
+	status: done
+	target: 2026-03-20
 - `NEXT-19` Добавить dry-run режим для `repair` и `unblock`.
 	owner: copilot
 	status: todo

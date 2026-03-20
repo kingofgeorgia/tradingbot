@@ -138,6 +138,15 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 4. После выравнивания state выполнить `unblock`.
 5. Повторно проверить статус через `inspect`.
 
+Post-smoke checklist:
+1. Проверить [logs/app.log](../logs/app.log): есть startup summary и запись о runtime mode или `RUN_ONCE enabled`.
+2. Проверить [logs/errors.log](../logs/errors.log): нет новых execution/fatal ошибок для текущего smoke-прогона.
+3. Проверить [data/reconciliation.csv](../data/reconciliation.csv): есть строка reconciliation с ожидаемым `status`.
+4. Проверить [data/errors.csv](../data/errors.csv): отсутствуют неожиданные runtime/API ошибки.
+5. Проверить [data/signals.csv](../data/signals.csv): signal logging присутствует для сценариев `observe-only` и `no-new-entries`.
+6. Проверить [data/trades.csv](../data/trades.csv): нет execution rows, если smoke должен был только проверить suppression execution.
+7. Проверить [data/repair.csv](../data/repair.csv): нет новых manual repair/unblock записей, если оператор не запускал repair flow.
+
 Policy note:
 - `SYMBOL_POLICY_OVERRIDES` принимает JSON-объект по символам, например `{"BTCUSDT":{"runtime_mode":"observe-only","risk_per_trade_pct":0.02,"max_position_pct":0.05}}`.
 - Per-symbol `runtime_mode` не может ослабить глобальный `RUNTIME_MODE`; effective mode для символа всегда выбирается как более строгий из двух.
