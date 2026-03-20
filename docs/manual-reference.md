@@ -144,6 +144,7 @@ Policy note:
 - `inspect` теперь показывает по каждому symbol его runtime category (`ready`, `position-open`, `suspect`, `blocked`), effective mode, issue/acknowledgement status и last manual action.
 - `ALERT_COOLDOWN_SECONDS` задает suppression window для повторяющихся startup/runtime alerts с одинаковым alert key; `0` отключает cooldown.
 - `inspect --json` возвращает стабильный top-level payload: `runtime_mode`, `open_positions`, `blocked_symbols`, `suspect_positions`, `startup_issue_keys`, `symbol_statuses`, `last_reconciled_at`, `last_reconciliation_status`, `last_manual_review_at`.
+- `startup-check-only` smoke теперь прогоняется как subprocess path: reconciliation выполняется, startup summary отправляется, trading loop не стартует.
 
 Навигация: [к модулю](#modules) | [к тестам](#tests) | [к содержанию](#содержание)
 
@@ -175,6 +176,7 @@ Policy note:
 - [tests/test_trade_execution.py](../tests/test_trade_execution.py) — тесты execution result models и BUY/SELL use-cases. Ключевые сущности: `TradeExecutionModelTests`, `OpenPositionUseCaseTests`, `ClosePositionUseCaseTests`.
 - [tests/test_reconciliation.py](../tests/test_reconciliation.py) — тесты startup reconciliation и mismatch handling. Ключевые сущности: `FakeOrderManager`, `FakeStrategy`, `ReconciliationTests`.
 - [tests/test_repair.py](../tests/test_repair.py) — тесты operator repair flow. Ключевые сущности: `FakeOrderManager`, `RepairFlowTests`.
+- [tests/test_cli_smoke.py](../tests/test_cli_smoke.py) — subprocess-level smoke tests для operator commands и runtime mode entrypoints. Ключевая сущность: `CliSmokeTests`.
 - [tests/test_status.py](../tests/test_status.py) — тесты operator status report. Ключевая сущность: `StatusTests`.
 - [tests/test_status_json_format.py](../tests/test_status_json_format.py) — regression-тест на стабильность top-level и per-symbol JSON keys для `inspect --json`. Ключевая сущность: `StatusJsonFormatTests`.
 - [tests/test_state_fixtures.py](../tests/test_state_fixtures.py) — regression fixtures для state compatibility. Ключевая сущность: `StateFixturesTests`.

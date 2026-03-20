@@ -123,8 +123,8 @@
 	target: 2026-03-20
 - `NEXT-12` Добавить end-to-end smoke test для режима `startup-check-only`.
 	owner: copilot
-	status: todo
-	target: 2026-04-24
+	status: done
+	target: 2026-03-20
 - `NEXT-13` Добавить end-to-end smoke test для режима `observe-only`.
 	owner: copilot
 	status: todo

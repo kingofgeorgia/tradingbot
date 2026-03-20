@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # ruff: noqa: E402
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -15,7 +16,7 @@ if str(SRC_DIR) not in sys.path:
 
 import binance_bot.main as app_main
 from binance_bot.core.models import BotState, ExchangePositionSnapshot, Position, StartupIssue
-from tests.fakes import FakeBinanceClient, FakeJournal, FakeLoggers, FakeStateStore, make_settings
+from tests.fakes import FakeBinanceClient, FakeJournal, FakeLoggers, FakeNotifier, FakeStateStore, make_settings
 
 
 class FakeCliOrderManager:
@@ -37,6 +38,10 @@ class FakeCliOrderManager:
     def drop_local_position(symbol: str, state: BotState) -> None:
         state.open_positions.pop(symbol, None)
         state.suspect_positions.pop(symbol, None)
+
+    @staticmethod
+    def mark_position_unrecoverable(symbol: str, reason: str, state: BotState) -> None:
+        state.suspect_positions[symbol] = reason
 
 
 def build_runtime_for_scenario(scenario: str, temp_dir: str) -> SimpleNamespace:
@@ -134,6 +139,20 @@ def build_runtime_for_scenario(scenario: str, temp_dir: str) -> SimpleNamespace:
             has_recent_trades=False,
             step_size=0.001,
         )
+    elif scenario == "runtime-startup-check-only":
+        settings.runtime_mode = "startup-check-only"
+        state = BotState()
+        client.position_snapshots["BTCUSDT"] = ExchangePositionSnapshot(
+            symbol="BTCUSDT",
+            base_asset="BTC",
+            exchange_quantity=0.0,
+            average_entry_price=None,
+            last_order_id=None,
+            last_trade_time=None,
+            has_open_orders=False,
+            has_recent_trades=False,
+            step_size=0.001,
+        )
     else:
         raise ValueError(f"Unsupported smoke scenario: {scenario}")
 
@@ -141,8 +160,15 @@ def build_runtime_for_scenario(scenario: str, temp_dir: str) -> SimpleNamespace:
         settings=settings,
         client=client,
         state_store=FakeStateStore(state),
+        notifier=FakeNotifier(),
+        signals_journal=FakeJournal(),
+        trades_journal=FakeJournal(),
+        errors_journal=FakeJournal(),
+        reconciliation_journal=FakeJournal(),
         repair_journal=FakeJournal(),
         loggers=FakeLoggers(),
+        strategy=object(),
+        risk_manager=object(),
         order_manager=FakeCliOrderManager(),
     )
 
@@ -153,6 +179,17 @@ def main() -> int:
     runtime = build_runtime_for_scenario(scenario, temp_dir)
     with patch("binance_bot.main.build_runtime", return_value=runtime):
         app_main.run(sys.argv[1:])
+    if scenario == "runtime-startup-check-only":
+        state = runtime.state_store.load()
+        print(
+            json.dumps(
+                {
+                    "runtime_mode": runtime.settings.runtime_mode,
+                    "last_reconciliation_status": state.last_reconciliation_status,
+                    "notifier_messages": list(runtime.notifier.messages),
+                }
+            )
+        )
     return 0
 
 

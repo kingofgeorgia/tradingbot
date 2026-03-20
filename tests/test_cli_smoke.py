@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -60,3 +61,13 @@ class CliSmokeTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertIn("Unblocked BTCUSDT.", result.stdout)
+
+    def test_startup_check_only_mode_smoke(self) -> None:
+        result = self.run_smoke("runtime-startup-check-only")
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["runtime_mode"], "startup-check-only")
+        self.assertEqual(payload["last_reconciliation_status"], "clean")
+        self.assertEqual(len(payload["notifier_messages"]), 1)
+        self.assertIn("Startup summary", payload["notifier_messages"][0])
