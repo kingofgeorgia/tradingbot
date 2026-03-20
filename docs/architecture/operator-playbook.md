@@ -34,6 +34,11 @@
 
 This checklist is for `APP_MODE=demo` only. The goal is to collect operator evidence for blocked backlog items without improvising on live-like state changes.
 
+Companion docs:
+
+- `docs/architecture/operator-testnet-powershell-runbook.md` for ready-to-run Windows PowerShell commands.
+- `docs/architecture/testnet-evidence-report-template.md` for the final evidence report.
+
 ### Pre-flight
 
 1. Confirm `.env` uses `APP_MODE=demo` and a dedicated test symbol set.

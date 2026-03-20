@@ -25,6 +25,7 @@
 - End-to-end subprocess smoke для `RUNTIME_MODE=no-new-entries`, чтобы BUY signals логировались, но новые позиции не открывались.
 - `repair` и `unblock` поддерживают `--dry-run`, чтобы оператор мог проверить manual action без backup/state mutation и journal writes.
 - В `docs/architecture/operator-playbook.md` есть точный manual testnet checklist для blocked-сценариев NEXT-15..17.
+- Для Windows есть готовый PowerShell runbook в `docs/architecture/operator-testnet-powershell-runbook.md` и шаблон отчета в `docs/architecture/testnet-evidence-report-template.md`.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
 - Явная runtime error policy: warning/runtime-io ошибки журналируются без operator alert, а execution/fatal ошибки получают реакцию и уведомление.
