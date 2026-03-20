@@ -128,7 +128,10 @@
 
 - Добавлен встроенный backlog проекта как рабочий planning artifact для следующих итераций.
 - Подготовлены manual testnet operator docs, включая fixed PowerShell block для `NEXT-15` по `BTCUSDT`.
+- Добавлены отдельный quick path и сценарный отчет для `NEXT-17` long-runtime journal review.
 
 Ключевые модули:
 - [docs/backlog.md](../backlog.md)
 - [docs/architecture/operator-testnet-next15-btcusdt-snippet.md](./operator-testnet-next15-btcusdt-snippet.md)
+- [docs/architecture/operator-testnet-next17-quick-runbook.md](./operator-testnet-next17-quick-runbook.md)
+- [docs/architecture/testnet-evidence-report-btcusdt-next17.md](./testnet-evidence-report-btcusdt-next17.md)

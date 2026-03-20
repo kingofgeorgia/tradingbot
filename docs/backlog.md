@@ -144,7 +144,7 @@
 	owner: user
 	status: blocked
 	target: 2026-04-27
-	note: manual checklist в `docs/architecture/operator-playbook.md`, полный PowerShell runbook в `docs/architecture/operator-testnet-powershell-runbook.md`, общий шаблон отчета в `docs/architecture/testnet-evidence-report-template.md`
+	note: manual checklist в `docs/architecture/operator-playbook.md`, полный PowerShell runbook в `docs/architecture/operator-testnet-powershell-runbook.md`, quick runbook в `docs/architecture/operator-testnet-next17-quick-runbook.md`, общий шаблон отчета в `docs/architecture/testnet-evidence-report-template.md`, сценарный отчет в `docs/architecture/testnet-evidence-report-btcusdt-next17.md`
 - `NEXT-18` Добавить короткий operational checklist для ревизии логов и журналов после runtime smoke.
 	owner: copilot
 	status: done
