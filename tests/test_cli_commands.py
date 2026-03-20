@@ -118,6 +118,7 @@ class CliCommandTests(unittest.TestCase):
 
         self.assertIn("Blocked symbols: BTCUSDT", output)
         self.assertIn("Startup issues: BTCUSDT:exchange-position-without-local-state:block-symbol", output)
+        self.assertIn("Manual review queue size: 1", output)
 
     def test_inspect_json_command_outputs_machine_readable_status(self) -> None:
         output = self.run_command("inspect", "--json")
@@ -127,6 +128,21 @@ class CliCommandTests(unittest.TestCase):
         self.assertEqual(payload["startup_issue_keys"], ["BTCUSDT:exchange-position-without-local-state:block-symbol"])
         self.assertEqual(payload["symbol_statuses"][0]["symbol"], "BTCUSDT")
         self.assertEqual(payload["symbol_statuses"][0]["category"], "blocked")
+        self.assertEqual(payload["manual_review_queue"][0]["recommended_action"], "acknowledge -> repair restore-from-exchange")
+
+    def test_review_command_outputs_manual_review_queue(self) -> None:
+        output = self.run_command("review")
+
+        self.assertIn("BTCUSDT: priority=high", output)
+        self.assertIn("recommended_action=acknowledge -> repair restore-from-exchange", output)
+
+    def test_review_json_command_outputs_machine_readable_queue(self) -> None:
+        output = self.run_command("review", "--json")
+        payload = json.loads(output)
+
+        self.assertEqual(payload["queue_size"], 1)
+        self.assertEqual(payload["manual_review_queue"][0]["symbol"], "BTCUSDT")
+        self.assertEqual(payload["manual_review_queue"][0]["priority"], "high")
 
     def test_acknowledge_command_updates_issue_state(self) -> None:
         output = self.run_command("acknowledge", "BTCUSDT")

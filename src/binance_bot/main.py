@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import sys
 
-from binance_bot.services.repair import acknowledge_issue, inspect_runtime_issues, repair_symbol_state, unblock_symbol
+from binance_bot.services.repair import (
+    acknowledge_issue,
+    inspect_manual_review_queue,
+    inspect_runtime_issues,
+    repair_symbol_state,
+    unblock_symbol,
+)
 from binance_bot.services.runtime import build_runtime, reconcile_startup, run_loop
 
 
@@ -27,6 +33,10 @@ def _run_operator_command(runtime, arguments: list[str]) -> None:
     if command == "inspect":
         as_json = "--json" in arguments[1:]
         print(inspect_runtime_issues(settings=runtime.settings, client=runtime.client, state=state, as_json=as_json))
+        return
+    if command == "review":
+        as_json = "--json" in arguments[1:]
+        print(inspect_manual_review_queue(settings=runtime.settings, client=runtime.client, state=state, as_json=as_json))
         return
     if command == "acknowledge" and len(command_arguments) >= 1:
         print(
@@ -72,7 +82,7 @@ def _run_operator_command(runtime, arguments: list[str]) -> None:
         return
 
     print(
-        "Unsupported command. Use: inspect [--json] | acknowledge <SYMBOL> | repair <SYMBOL> <ACTION> [--dry-run] | unblock <SYMBOL> [--dry-run]"
+        "Unsupported command. Use: inspect [--json] | review [--json] | acknowledge <SYMBOL> | repair <SYMBOL> <ACTION> [--dry-run] | unblock <SYMBOL> [--dry-run]"
     )
 
 

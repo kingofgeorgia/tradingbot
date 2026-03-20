@@ -106,6 +106,19 @@ class SymbolRuntimeStatus:
 
 
 @dataclass(slots=True)
+class ManualReviewItem:
+    queue_key: str
+    symbol: str
+    category: str
+    priority: str
+    reason: str
+    recommended_action: str
+    startup_issue_key: str | None = None
+    issue_acknowledged: bool = False
+    last_manual_action: str | None = None
+
+
+@dataclass(slots=True)
 class ReconciliationResult:
     symbol_statuses: dict[str, SymbolRuntimeStatus] = field(default_factory=dict)
     issues: list[StartupIssue] = field(default_factory=list)
@@ -145,6 +158,7 @@ class RuntimeStatusReport:
     open_positions: list[str]
     startup_issue_keys: list[str]
     symbol_statuses: list[SymbolRuntimeStatus]
+    manual_review_queue: list[ManualReviewItem]
     last_reconciled_at: str | None
     last_reconciliation_status: str | None
     last_manual_review_at: str | None

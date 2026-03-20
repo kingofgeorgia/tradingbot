@@ -39,7 +39,19 @@
 
 ## Now
 
-Открытых задач в `Now` сейчас нет. Все текущие `NOW-*` закрыты на `2026-03-20`; следующий незакрытый слой состоит из user-blocked `NEXT-15`, `NEXT-16`, `NEXT-17` и будущих `Later`-идей.
+- `NOW-19` Добавить manual review queue для unresolved startup/runtime issues.
+	owner: copilot
+	status: done
+	target: 2026-03-20
+	files: `src/binance_bot/services/status.py`, `src/binance_bot/services/repair.py`, `src/binance_bot/main.py`, `tests/test_status.py`, `tests/test_cli_commands.py`
+- `NOW-20` Добавить graceful degradation mode при частичной недоступности exchange API.
+	owner: copilot
+	status: todo
+	target: 2026-03-21
+- `NOW-21` Сделать отдельный backtesting harness для strategy layer без смешивания с runtime execution кодом.
+	owner: copilot
+	status: todo
+	target: 2026-03-22
 
 - `NOW-15` Добавить state backup snapshot перед любым manual repair действием.
 	owner: copilot
@@ -164,8 +176,8 @@
 	target: 2026-05-01
 - `LATER-02` Сделать отдельный backtesting harness для strategy layer без смешивания с runtime execution кодом.
 	owner: copilot
-	status: todo
-	target: 2026-05-10
+	status: promoted-to-now
+	target: moved to `NOW-21` on 2026-03-20
 - `LATER-03` Вынести operator/status слой в небольшой локальный dashboard или TUI, если CLI станет узким местом.
 	owner: user
 	status: todo
@@ -180,12 +192,12 @@
 	target: 2026-06-10
 - `LATER-06` Добавить manual review queue для unresolved startup/runtime issues.
 	owner: copilot
-	status: todo
-	target: 2026-06-20
+	status: promoted-to-now
+	target: moved to `NOW-19` on 2026-03-20
 - `LATER-07` Добавить graceful degradation mode при частичной недоступности exchange API.
 	owner: copilot
-	status: todo
-	target: 2026-06-30
+	status: promoted-to-now
+	target: moved to `NOW-20` on 2026-03-20
 
 ## Not now
 

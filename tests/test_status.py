@@ -51,6 +51,8 @@ class StatusTests(unittest.TestCase):
         self.assertIn("Runtime mode: no-new-entries", text)
         self.assertIn("Blocked symbols: BTCUSDT", text)
         self.assertIn("BTCUSDT:quantity-mismatch:block-symbol", text)
+        self.assertIn("Manual review queue size: 1", text)
+        self.assertIn("recommended_action=inspect", text)
         self.assertIn("Per-symbol status:", text)
         self.assertIn("BTCUSDT: category=blocked; effective_mode=observe-only", text)
         self.assertIn("acknowledged=yes", text)
@@ -145,11 +147,14 @@ class StatusTests(unittest.TestCase):
                 "last_reconciled_at",
                 "last_reconciliation_status",
                 "last_manual_review_at",
+                "manual_review_queue",
             ],
         )
         self.assertEqual(payload["symbol_statuses"][0]["symbol"], "BTCUSDT")
         self.assertEqual(payload["symbol_statuses"][0]["category"], "blocked")
         self.assertEqual(payload["symbol_statuses"][0]["issue_acknowledged"], True)
+        self.assertEqual(payload["manual_review_queue"][0]["symbol"], "BTCUSDT")
+        self.assertEqual(payload["manual_review_queue"][0]["recommended_action"], "inspect")
 
 
 if __name__ == "__main__":

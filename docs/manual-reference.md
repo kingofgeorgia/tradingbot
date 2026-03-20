@@ -88,7 +88,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 ### Core Layer
 
 - [src/binance_bot/core/exchange.py](../src/binance_bot/core/exchange.py) — exchange error и protocol-based port contracts для runtime/services/use-cases. Ключевые сущности: `ExchangeAPIError`, `ExchangeExecutionPort`, `ExchangeMarketDataPort`, `ExchangeReconciliationPort`, `ExchangeRuntimePort`.
-- [src/binance_bot/core/models.py](../src/binance_bot/core/models.py) — domain models и persistent runtime state, включая `schema_version` в `BotState` и per-symbol runtime categories в `RuntimeStatusReport`. Ключевые классы: `Candle`, `SymbolFilters`, `Position`, `ExchangePositionSnapshot`, `StartupIssue`, `SymbolRuntimeStatus`, `ReconciliationResult`, `RepairRecord`, `RuntimeStatusReport`, `BotState`.
+- [src/binance_bot/core/models.py](../src/binance_bot/core/models.py) — domain models и persistent runtime state, включая `schema_version` в `BotState`, per-symbol runtime categories и operator-facing manual review queue в `RuntimeStatusReport`. Ключевые классы: `Candle`, `SymbolFilters`, `Position`, `ExchangePositionSnapshot`, `StartupIssue`, `SymbolRuntimeStatus`, `ManualReviewItem`, `ReconciliationResult`, `RepairRecord`, `RuntimeStatusReport`, `BotState`.
 - [src/binance_bot/core/state.py](../src/binance_bot/core/state.py) — JSON persistence layer с migration boundary по `schema_version` и recovery backup path для битого/несовместимого state payload. Ключевые сущности: `StateLoadError`, `StateStore`, `load()`, `recover(...)`, `save(state)`, `migrate_state_payload(...)`.
 - [src/binance_bot/core/journal.py](../src/binance_bot/core/journal.py) — append-only CSV journaling. Ключевые сущности: `CsvJournal`, `write(row)`.
 - [src/binance_bot/core/logging_setup.py](../src/binance_bot/core/logging_setup.py) — настройка логгеров. Ключевые сущности: `Loggers`, `configure_logging(...)`.
@@ -133,6 +133,8 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 Команды оператора:
 - `python main.py inspect`
 - `python main.py inspect --json`
+- `python main.py review`
+- `python main.py review --json`
 - `python main.py acknowledge BTCUSDT`
 - `python main.py repair BTCUSDT restore-from-exchange`
 - `python main.py repair BTCUSDT drop-local-state`
@@ -142,7 +144,8 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 
 - [src/binance_bot/services/reconciliation.py](../src/binance_bot/services/reconciliation.py) — startup reconciliation и блокировка mismatch scenarios. Ключевые сущности: `load_exchange_snapshot(...)`, `reconcile_symbol_state(...)`, `reconcile_runtime_state(...)`, `apply_reconciliation_result(...)`.
 - [src/binance_bot/services/repair.py](../src/binance_bot/services/repair.py) — manual repair и unblock flow, включая text/json paths для `inspect`. Ключевые сущности: `inspect_runtime_issues(...)`, `acknowledge_issue(...)`, `repair_symbol_state(...)`, `unblock_symbol(...)`, `_backup_state_before_manual_action(...)`.
-- [src/binance_bot/services/status.py](../src/binance_bot/services/status.py) — status summary для `inspect`, per-symbol runtime categories, JSON serializer и heartbeat notifications. Ключевые сущности: `build_runtime_status_report(...)`, `format_status_report(...)`, `format_status_report_json(...)`, `runtime_status_report_to_dict(...)`, `format_runtime_health_notification(...)`, `format_startup_summary_notification(...)`.
+- [src/binance_bot/services/repair.py](../src/binance_bot/services/repair.py) также отдает отдельный queue-focused operator path через `review` / `review --json`.
+- [src/binance_bot/services/status.py](../src/binance_bot/services/status.py) — status summary для `inspect`, manual review queue, per-symbol runtime categories, JSON serializer и heartbeat notifications. Ключевые сущности: `build_runtime_status_report(...)`, `format_status_report(...)`, `format_status_report_json(...)`, `format_manual_review_queue(...)`, `format_manual_review_queue_json(...)`, `runtime_status_report_to_dict(...)`, `manual_review_queue_to_dict(...)`, `format_runtime_health_notification(...)`, `format_startup_summary_notification(...)`.
 - [docs/architecture/operator-playbook.md](./architecture/operator-playbook.md) — playbook для ручной работы с проблемными символами.
 - В `operator-playbook` теперь зафиксирован пошаговый manual testnet checklist для сценариев `local-position-missing-on-exchange`, `exchange-position-without-local-state` и длительной ревизии CSV/log artifacts.
 - [docs/architecture/operator-testnet-powershell-runbook.md](./architecture/operator-testnet-powershell-runbook.md) — готовые PowerShell команды для snapshot, startup-check-only run, checkpoint metrics и archive.
@@ -177,6 +180,8 @@ Policy note:
 - `inspect` теперь показывает по каждому symbol его runtime category (`ready`, `position-open`, `suspect`, `blocked`), effective mode, issue/acknowledgement status и last manual action.
 - `ALERT_COOLDOWN_SECONDS` задает suppression window для повторяющихся startup/runtime alerts с одинаковым alert key; `0` отключает cooldown.
 - `inspect --json` возвращает стабильный top-level payload: `runtime_mode`, `open_positions`, `blocked_symbols`, `suspect_positions`, `startup_issue_keys`, `symbol_statuses`, `last_reconciled_at`, `last_reconciliation_status`, `last_manual_review_at`.
+- `review` показывает только unresolved queue items по blocked/suspect/startup-issue символам, а `review --json` отдает отдельный machine-readable payload с `queue_size` и `manual_review_queue`.
+- `inspect --json` теперь дополнительно включает `manual_review_queue`, чтобы operator/status snapshot и focused queue использовали один и тот же источник данных.
 - `repair ... --dry-run` и `unblock ... --dry-run` проходят тот же decision/reconciliation path, но не делают backup, не сохраняют state и не пишут repair journal.
 - `startup-check-only` smoke теперь прогоняется как subprocess path: reconciliation выполняется, startup summary отправляется, trading loop не стартует.
 - `observe-only` smoke теперь прогоняется как subprocess path с `RUN_ONCE`: reconciliation и один runtime cycle выполняются, signal logging остается активным, но execution не происходит.

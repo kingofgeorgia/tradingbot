@@ -130,9 +130,13 @@
 - Подготовлены manual testnet operator docs, включая fixed PowerShell block для `NEXT-15` по `BTCUSDT`.
 - Добавлены отдельный quick path и сценарный отчет для `NEXT-17` long-runtime journal review.
 - Зафиксировано planning state: открытых `Now`-задач не осталось, а ближайшие незакрытые шаги находятся в blocked `NEXT-15..17`.
+- Сформирован новый кандидатский `Now`-слой из `LATER-06`, `LATER-07`, `LATER-02`; `NOW-19` закрыт через explicit manual review queue, `review` / `review --json` и расширенный status payload.
 
 Ключевые модули:
 - [docs/backlog.md](../backlog.md)
 - [docs/architecture/operator-testnet-next15-btcusdt-snippet.md](./operator-testnet-next15-btcusdt-snippet.md)
 - [docs/architecture/operator-testnet-next17-quick-runbook.md](./operator-testnet-next17-quick-runbook.md)
 - [docs/architecture/testnet-evidence-report-btcusdt-next17.md](./testnet-evidence-report-btcusdt-next17.md)
+- [src/binance_bot/services/status.py](../src/binance_bot/services/status.py)
+- [src/binance_bot/services/repair.py](../src/binance_bot/services/repair.py)
+- [src/binance_bot/main.py](../src/binance_bot/main.py)

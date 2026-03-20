@@ -6,7 +6,13 @@ from binance_bot.core.decisions import decide_issue_acknowledgement, decide_manu
 from binance_bot.core.models import BotState, RepairRecord
 from binance_bot.services.error_handler import utc_now_iso
 from binance_bot.services.reconciliation import reconcile_runtime_state
-from binance_bot.services.status import build_runtime_status_report, format_status_report, format_status_report_json
+from binance_bot.services.status import (
+    build_runtime_status_report,
+    format_manual_review_queue,
+    format_manual_review_queue_json,
+    format_status_report,
+    format_status_report_json,
+)
 
 
 def inspect_runtime_issues(*, settings, client, state, as_json: bool = False) -> str:
@@ -15,6 +21,14 @@ def inspect_runtime_issues(*, settings, client, state, as_json: bool = False) ->
     if as_json:
         return format_status_report_json(report)
     return format_status_report(report)
+
+
+def inspect_manual_review_queue(*, settings, client, state, as_json: bool = False) -> str:
+    _ = client
+    report = build_runtime_status_report(settings=settings, state=state)
+    if as_json:
+        return format_manual_review_queue_json(report)
+    return format_manual_review_queue(report)
 
 
 def acknowledge_issue(*, symbol: str, state, state_store, repair_journal, loggers, settings) -> str:
