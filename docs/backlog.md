@@ -91,8 +91,8 @@
 	target: 2026-03-20
 - `NEXT-04` Выделить exchange port поверх Binance client для более чистых service/use-case тестов.
 	owner: copilot
-	status: todo
-	target: 2026-04-10
+	status: done
+	target: 2026-03-20
 - `NEXT-05` Развести runtime error categories по policy реакции и уведомлениям.
 	owner: copilot
 	status: todo

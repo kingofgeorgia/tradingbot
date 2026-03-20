@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from binance_bot.clients.binance_client import BinanceSpotClient
 from binance_bot.config import Settings, ensure_runtime_directories, load_settings
+from binance_bot.core.exchange import ExchangeRuntimePort
 from binance_bot.core.journal import CsvJournal
 from binance_bot.core.logging_setup import Loggers, configure_logging
 from binance_bot.core.state import StateStore
@@ -29,7 +30,7 @@ class AppRuntime:
     reconciliation_journal: CsvJournal
     repair_journal: CsvJournal
     notifier: TelegramNotifier
-    client: BinanceSpotClient
+    client: ExchangeRuntimePort
     state_store: StateStore
     strategy: EmaCrossStrategy
     risk_manager: RiskManager
@@ -76,7 +77,7 @@ def build_runtime() -> AppRuntime:
     )
 
     notifier = TelegramNotifier(settings.telegram_bot_token, settings.telegram_chat_id, loggers.error)
-    client = BinanceSpotClient(settings)
+    client: ExchangeRuntimePort = BinanceSpotClient(settings)
     state_store = StateStore(settings.state_file)
 
     strategy = EmaCrossStrategy(

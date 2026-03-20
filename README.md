@@ -16,6 +16,7 @@
 - Версионированный `state.json` с `schema_version` и backward-compatible migration path для локального runtime state.
 - Настраиваемые heartbeat/summary notifications по runtime health и blocked symbols.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
+- Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
 - Ограничения риска: лимит риска на сделку, размер позиции, число одновременно открытых позиций, дневной лимит убытка и блокировка после серии убытков.
 - Логи в консоль и файлы, CSV-журналы сигналов, сделок, ошибок, reconciliation и repair-history.
 - Telegram-уведомления о старте, сделках, API-ошибках, startup mismatch и recovery-сценариях.
@@ -33,6 +34,7 @@
 - `src/binance_bot/services/error_handler.py` — единая запись и уведомление по API-ошибкам.
 - `src/binance_bot/config.py` — загрузка `.env`, валидация настроек и подготовка runtime-директорий.
 - `src/binance_bot/clients/binance_client.py` — REST-клиент Binance Spot.
+- `src/binance_bot/core/exchange.py` — exchange error и protocol-based port contracts между runtime/use-cases и конкретным Binance adapter.
 - `src/binance_bot/strategy/ema_cross.py` — вычисление EMA и генерация сигналов.
 - `src/binance_bot/risk/manager.py` — риск-менеджмент и лимиты торговли.
 - `src/binance_bot/orders/manager.py` — открытие и закрытие позиций.

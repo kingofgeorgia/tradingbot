@@ -10,12 +10,12 @@ from urllib.parse import urlencode
 import requests
 
 from binance_bot.config import Settings
+from binance_bot.core.exchange import ExchangeAPIError
 from binance_bot.core.models import Candle, ExchangePositionSnapshot, SymbolFilters
 from binance_bot.core.rounding import round_down_to_step
 
 
-class BinanceAPIError(RuntimeError):
-    """Raised when Binance returns an API or transport error."""
+BinanceAPIError = ExchangeAPIError
 
 
 class BinanceSpotClient:

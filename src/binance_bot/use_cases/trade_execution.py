@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from binance_bot.clients.binance_client import BinanceAPIError
 from binance_bot.config import Settings
+from binance_bot.core.exchange import ExchangeAPIError
 from binance_bot.core.models import BotState, Position, SymbolFilters
 from binance_bot.core.trade_execution import OpenPositionResult, build_open_position_result, calculate_close_result
 from binance_bot.strategy.ema_cross import TradeSignal
@@ -143,7 +143,7 @@ class ClosePositionUseCase:
         filters = self._client.get_symbol_filters(symbol)
         quantity = self._client.round_step_size(position.quantity, filters.step_size)
         if quantity <= 0:
-            raise BinanceAPIError(f"Position quantity for {symbol} became invalid after rounding.")
+            raise ExchangeAPIError(f"Position quantity for {symbol} became invalid after rounding.")
 
         order_payload = self._client.create_market_order(symbol, "SELL", quantity)
         confirmed_payload = _confirm_order(

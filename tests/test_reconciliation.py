@@ -9,7 +9,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from binance_bot.clients.binance_client import BinanceAPIError
+from binance_bot.core.exchange import ExchangeAPIError
 from binance_bot.core.models import BotState, ExchangePositionSnapshot, Position, SymbolFilters
 from binance_bot.services.cycle import process_cycle
 from binance_bot.services.reconciliation import apply_reconciliation_result, reconcile_runtime_state
@@ -245,7 +245,7 @@ class ReconciliationTests(unittest.TestCase):
 
     def test_snapshot_failure_blocks_symbol(self) -> None:
         state = BotState()
-        self.client.position_snapshot_errors["BTCUSDT"] = BinanceAPIError("snapshot failed")
+        self.client.position_snapshot_errors["BTCUSDT"] = ExchangeAPIError("snapshot failed")
         self.client.position_snapshots["ETHUSDT"] = ExchangePositionSnapshot(
             symbol="ETHUSDT",
             base_asset="ETH",

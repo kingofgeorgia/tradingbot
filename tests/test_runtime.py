@@ -14,6 +14,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from binance_bot.core.models import BotState, StartupIssue
+from binance_bot.core.exchange import ExchangeRuntimePort
 from binance_bot.services.runtime import run_loop
 from tests.fakes import FakeJournal, FakeLoggers, FakeNotifier, FakeStateStore, make_settings
 
@@ -42,12 +43,16 @@ class RuntimeHeartbeatTests(unittest.TestCase):
             loggers=FakeLoggers(),
             notifier=FakeNotifier(),
             state_store=FakeStateStore(state),
-            client=object(),
+            client=self.make_exchange_port_stub(),
             strategy=object(),
             risk_manager=object(),
             order_manager=object(),
             errors_journal=FakeJournal(),
         )
+
+    @staticmethod
+    def make_exchange_port_stub() -> ExchangeRuntimePort:
+        return SimpleNamespace(sync_time=lambda: None)
 
     def test_run_loop_sends_heartbeat_when_interval_reached(self) -> None:
         runtime = self.make_runtime()

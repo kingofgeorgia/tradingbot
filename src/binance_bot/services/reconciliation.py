@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from binance_bot.clients.binance_client import BinanceAPIError
 from binance_bot.core.decisions import decide_reconciliation_action, decide_symbol_block
+from binance_bot.core.exchange import ExchangeAPIError, ExchangeReconciliationPort
 from binance_bot.core.models import (
     BotState,
     ExchangePositionSnapshot,
@@ -12,7 +12,7 @@ from binance_bot.core.models import (
 from binance_bot.services.error_handler import utc_now_iso
 
 
-def load_exchange_snapshot(*, settings, client) -> dict[str, ExchangePositionSnapshot]:
+def load_exchange_snapshot(*, settings, client: ExchangeReconciliationPort) -> dict[str, ExchangePositionSnapshot]:
     snapshots: dict[str, ExchangePositionSnapshot] = {}
     for symbol in settings.symbols:
         snapshots[symbol] = client.get_position_snapshot(symbol, settings.quote_asset)
@@ -55,14 +55,14 @@ def reconcile_symbol_state(*, symbol: str, local_position, exchange_snapshot: Ex
     return status, issue, restore_snapshot
 
 
-def reconcile_runtime_state(*, settings, client, state: BotState) -> ReconciliationResult:
+def reconcile_runtime_state(*, settings, client: ExchangeReconciliationPort, state: BotState) -> ReconciliationResult:
     result = ReconciliationResult()
 
     for symbol in settings.symbols:
         local_position = state.open_positions.get(symbol)
         try:
             exchange_snapshot = client.get_position_snapshot(symbol, settings.quote_asset)
-        except BinanceAPIError as exc:
+        except ExchangeAPIError as exc:
             reason = f"startup-snapshot-failed: {exc}"
             result.symbol_statuses[symbol] = SymbolRuntimeStatus(
                 symbol=symbol,

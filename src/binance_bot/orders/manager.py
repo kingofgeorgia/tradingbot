@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from binance_bot.clients.binance_client import BinanceSpotClient
 from binance_bot.config import Settings
+from binance_bot.core.exchange import ExchangeExecutionPort
 from binance_bot.core.journal import CsvJournal
 from binance_bot.core.logging_setup import Loggers
 from binance_bot.core.models import BotState, ExchangePositionSnapshot, Position, SymbolFilters
@@ -18,7 +18,7 @@ class OrderManager:
     def __init__(
         self,
         settings: Settings,
-        client: BinanceSpotClient,
+        client: ExchangeExecutionPort,
         risk_manager: RiskManager,
         state_store: StateStore,
         loggers: Loggers,
