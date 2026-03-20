@@ -131,6 +131,7 @@
 - Добавлены отдельный quick path и сценарный отчет для `NEXT-17` long-runtime journal review.
 - Зафиксировано planning state: открытых `Now`-задач не осталось, а ближайшие незакрытые шаги находятся в blocked `NEXT-15..17`.
 - Сформирован новый кандидатский `Now`-слой из `LATER-06`, `LATER-07`, `LATER-02`; `NOW-19` закрыт через explicit manual review queue, `review` / `review --json` и расширенный status payload.
+- `NOW-20` закрыт через graceful degradation в `cycle`: partial portfolio API failures больше не обрывают весь runtime-cycle, а переводят его в safe no-new-entry path на один проход.
 
 Ключевые модули:
 - [docs/backlog.md](../backlog.md)
@@ -140,3 +141,4 @@
 - [src/binance_bot/services/status.py](../src/binance_bot/services/status.py)
 - [src/binance_bot/services/repair.py](../src/binance_bot/services/repair.py)
 - [src/binance_bot/main.py](../src/binance_bot/main.py)
+- [src/binance_bot/services/cycle.py](../src/binance_bot/services/cycle.py)

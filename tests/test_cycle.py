@@ -74,8 +74,12 @@ class CycleTests(unittest.TestCase):
         self.notifier = FakeNotifier()
         self.loggers = FakeLoggers()
 
-    def test_portfolio_error_aborts_cycle(self) -> None:
+    def test_portfolio_error_enables_graceful_degradation(self) -> None:
         self.client.raise_portfolio_error = BinanceAPIError("portfolio failed")
+        self.strategy.signals_by_symbol = {
+            "BTCUSDT": TradeSignal("BTCUSDT", "BUY", "ema20-crossed-above-ema50", 100.0, 101.0, 99.0, 1710000000000),
+            "ETHUSDT": TradeSignal("ETHUSDT", "HOLD", "no-crossover", 200.0, 201.0, 199.0, 1710000005000),
+        }
 
         process_cycle(
             settings=self.settings,
@@ -91,8 +95,46 @@ class CycleTests(unittest.TestCase):
         )
 
         self.assertEqual(self.errors_journal.rows[0]["scope"], "portfolio")
-        self.assertEqual(self.order_manager.logged_signals, [])
+        self.assertEqual(self.order_manager.logged_signals[0].symbol, "BTCUSDT")
+        self.assertEqual(self.order_manager.open_calls, [])
+        self.assertEqual(self.risk_manager.refresh_calls, [])
         self.assertEqual(self.notifier.messages, [])
+
+    def test_portfolio_error_still_allows_sell_flow(self) -> None:
+        self.client.raise_portfolio_error = BinanceAPIError("portfolio failed")
+        self.state.open_positions["BTCUSDT"] = Position(
+            symbol="BTCUSDT",
+            quantity=0.25,
+            entry_price=100.0,
+            stop_loss=98.0,
+            take_profit=104.0,
+            opened_at="2026-03-19T12:00:00+00:00",
+            order_id=1,
+            mode="demo",
+            quote_spent=25.0,
+            fee_paid_quote=0.1,
+        )
+        self.client.latest_prices["BTCUSDT"] = 100.0
+        self.strategy.signals_by_symbol = {
+            "BTCUSDT": TradeSignal("BTCUSDT", "SELL", "ema20-crossed-below-ema50", 100.0, 99.0, 101.0, 1710000000000),
+            "ETHUSDT": TradeSignal("ETHUSDT", "HOLD", "no-crossover", 200.0, 201.0, 199.0, 1710000005000),
+        }
+
+        process_cycle(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            strategy=self.strategy,
+            risk_manager=self.risk_manager,
+            order_manager=self.order_manager,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(self.errors_journal.rows[0]["scope"], "portfolio")
+        self.assertEqual(self.order_manager.close_calls[0][0], "BTCUSDT")
 
     def test_refresh_trading_day_saves_state(self) -> None:
         self.strategy.signals_by_symbol = {
@@ -309,6 +351,31 @@ class CycleTests(unittest.TestCase):
         self.assertEqual(self.errors_journal.rows[0]["scope"], "open-position")
         self.assertEqual(len(self.notifier.messages), 1)
         self.assertIn("Reaction: manual-review", self.notifier.messages[0])
+
+    def test_free_balance_error_skips_buy_but_still_refreshes_trading_day(self) -> None:
+        self.client.raise_free_balance_error = BinanceAPIError("free balance failed")
+        self.strategy.signals_by_symbol = {
+            "BTCUSDT": TradeSignal("BTCUSDT", "BUY", "ema20-crossed-above-ema50", 100.0, 101.0, 99.0, 1710000000000),
+            "ETHUSDT": TradeSignal("ETHUSDT", "HOLD", "no-crossover", 200.0, 201.0, 199.0, 1710000005000),
+        }
+
+        process_cycle(
+            settings=self.settings,
+            client=self.client,
+            state=self.state,
+            state_store=self.state_store,
+            strategy=self.strategy,
+            risk_manager=self.risk_manager,
+            order_manager=self.order_manager,
+            errors_journal=self.errors_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(self.errors_journal.rows[0]["scope"], "portfolio")
+        self.assertEqual(len(self.risk_manager.refresh_calls), 1)
+        self.assertEqual(self.order_manager.open_calls, [])
+        self.assertEqual(self.order_manager.logged_signals[0].symbol, "BTCUSDT")
 
     def test_no_new_entries_mode_skips_buy_execution(self) -> None:
         self.settings.runtime_mode = "no-new-entries"

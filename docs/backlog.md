@@ -46,8 +46,9 @@
 	files: `src/binance_bot/services/status.py`, `src/binance_bot/services/repair.py`, `src/binance_bot/main.py`, `tests/test_status.py`, `tests/test_cli_commands.py`
 - `NOW-20` Добавить graceful degradation mode при частичной недоступности exchange API.
 	owner: copilot
-	status: todo
-	target: 2026-03-21
+	status: done
+	target: 2026-03-20
+	files: `src/binance_bot/services/cycle.py`, `tests/test_cycle.py`
 - `NOW-21` Сделать отдельный backtesting harness для strategy layer без смешивания с runtime execution кодом.
 	owner: copilot
 	status: todo

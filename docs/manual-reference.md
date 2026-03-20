@@ -123,6 +123,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 
 - [src/binance_bot/services/runtime.py](../src/binance_bot/services/runtime.py) — composition root, lifecycle loop, runtime heartbeat notifications и startup recovery для невалидного `state.json`; concrete Binance client подключается здесь как реализация exchange port. Ключевые сущности: `AppRuntime`, `ensure_runtime_state_file(...)`, `build_runtime()`, `reconcile_startup(...)`, `run_loop(...)`.
 - [src/binance_bot/services/cycle.py](../src/binance_bot/services/cycle.py) — orchestration одного торгового цикла с effective per-symbol runtime policy для BUY/SELL execution. Ключевые сущности: `process_cycle(...)`, `_load_portfolio_snapshot(...)`, `_handle_sell_signal(...)`, `_handle_buy_signal(...)`, `_notify_halt_reason(...)`.
+- [src/binance_bot/services/cycle.py](../src/binance_bot/services/cycle.py) также реализует graceful degradation для partial portfolio API failures: monitoring и SELL path продолжаются, а BUY entries на текущий цикл отключаются без падения runtime.
 - [src/binance_bot/services/position_monitor.py](../src/binance_bot/services/position_monitor.py) — управление уже открытыми позициями с учетом per-symbol `observe-only` override. Ключевая сущность: `manage_open_positions(...)`.
 - [src/binance_bot/services/error_handler.py](../src/binance_bot/services/error_handler.py) — единая запись runtime/API ошибок с учетом `reaction` и `notify_operator`. Ключевые сущности: `utc_now_iso()`, `record_api_error(...)`.
 
@@ -182,6 +183,7 @@ Policy note:
 - `inspect --json` возвращает стабильный top-level payload: `runtime_mode`, `open_positions`, `blocked_symbols`, `suspect_positions`, `startup_issue_keys`, `symbol_statuses`, `last_reconciled_at`, `last_reconciliation_status`, `last_manual_review_at`.
 - `review` показывает только unresolved queue items по blocked/suspect/startup-issue символам, а `review --json` отдает отдельный machine-readable payload с `queue_size` и `manual_review_queue`.
 - `inspect --json` теперь дополнительно включает `manual_review_queue`, чтобы operator/status snapshot и focused queue использовали один и тот же источник данных.
+- При partial failure в `get_portfolio_value(...)` или `get_asset_free_balance(...)` runtime-cycle теперь не обрывается целиком: day refresh пропускается только если недоступен equity, monitoring и SELL flow продолжаются, а новые BUY entries безопасно suppress-ятся на один цикл.
 - `repair ... --dry-run` и `unblock ... --dry-run` проходят тот же decision/reconciliation path, но не делают backup, не сохраняют state и не пишут repair journal.
 - `startup-check-only` smoke теперь прогоняется как subprocess path: reconciliation выполняется, startup summary отправляется, trading loop не стартует.
 - `observe-only` smoke теперь прогоняется как subprocess path с `RUN_ONCE`: reconciliation и один runtime cycle выполняются, signal logging остается активным, но execution не происходит.

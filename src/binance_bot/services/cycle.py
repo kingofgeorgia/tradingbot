@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from binance_bot.core.decisions import decide_risk_entry, decide_signal_action
@@ -7,6 +8,16 @@ from binance_bot.core.exchange import ExchangeAPIError, ExchangeRuntimePort
 from binance_bot.services.alerts import send_alert_with_cooldown
 from binance_bot.services.error_handler import record_api_error
 from binance_bot.services.position_monitor import manage_open_positions
+
+
+@dataclass(slots=True)
+class PortfolioSnapshot:
+    total_equity: float | None
+    free_quote_balance: float | None
+
+    @property
+    def can_open_new_positions(self) -> bool:
+        return self.total_equity is not None and self.free_quote_balance is not None
 
 
 def process_cycle(
@@ -33,13 +44,18 @@ def process_cycle(
         notifier=notifier,
         loggers=loggers,
     )
-    if portfolio_snapshot is None:
-        return
+    if portfolio_snapshot.total_equity is not None:
+        risk_manager.refresh_trading_day(state, current_day, portfolio_snapshot.total_equity)
+        state_store.save(state)
+    else:
+        loggers.app.info(
+            "Graceful degradation active: skipping trading-day refresh because portfolio equity is unavailable."
+        )
 
-    total_equity, free_quote_balance = portfolio_snapshot
-
-    risk_manager.refresh_trading_day(state, current_day, total_equity)
-    state_store.save(state)
+    if not portfolio_snapshot.can_open_new_positions:
+        loggers.app.info(
+            "Graceful degradation active: new BUY entries are disabled for this cycle due to partial portfolio snapshot failure."
+        )
 
     manage_open_positions(
         settings=settings,
@@ -118,8 +134,7 @@ def process_cycle(
             symbol_runtime_mode=symbol_runtime_mode,
             state=state,
             current_day=current_day,
-            total_equity=total_equity,
-            free_quote_balance=free_quote_balance,
+            portfolio_snapshot=portfolio_snapshot,
             client=client,
             risk_manager=risk_manager,
             order_manager=order_manager,
@@ -131,10 +146,14 @@ def process_cycle(
         )
 
 
-def _load_portfolio_snapshot(*, client: ExchangeRuntimePort, settings, state, state_store, errors_journal, notifier, loggers):
+def _load_portfolio_snapshot(
+    *, client: ExchangeRuntimePort, settings, state, state_store, errors_journal, notifier, loggers
+) -> PortfolioSnapshot:
+    total_equity: float | None = None
+    free_quote_balance: float | None = None
+
     try:
         total_equity = client.get_portfolio_value(settings.symbols, settings.quote_asset)
-        free_quote_balance = client.get_asset_free_balance(settings.quote_asset)
     except ExchangeAPIError as exc:
         record_api_error(
             errors_journal,
@@ -148,8 +167,24 @@ def _load_portfolio_snapshot(*, client: ExchangeRuntimePort, settings, state, st
             state=state,
             state_store=state_store,
         )
-        return None
-    return total_equity, free_quote_balance
+
+    try:
+        free_quote_balance = client.get_asset_free_balance(settings.quote_asset)
+    except ExchangeAPIError as exc:
+        record_api_error(
+            errors_journal,
+            notifier,
+            loggers,
+            settings.app_mode,
+            "portfolio",
+            settings.quote_asset,
+            exc,
+            settings=settings,
+            state=state,
+            state_store=state_store,
+        )
+
+    return PortfolioSnapshot(total_equity=total_equity, free_quote_balance=free_quote_balance)
 
 
 def _handle_sell_signal(
@@ -201,8 +236,7 @@ def _handle_buy_signal(
     symbol_runtime_mode,
     state,
     current_day,
-    total_equity,
-    free_quote_balance,
+    portfolio_snapshot,
     client,
     risk_manager,
     order_manager,
@@ -218,6 +252,12 @@ def _handle_buy_signal(
     if symbol_runtime_mode == "no-new-entries":
         loggers.app.info("Skipping BUY execution for %s because effective_runtime_mode=no-new-entries", symbol)
         return
+    if not portfolio_snapshot.can_open_new_positions:
+        loggers.app.info(
+            "Skipping BUY execution for %s because graceful degradation disabled new entries for this cycle",
+            symbol,
+        )
+        return
 
     can_open, reason = risk_manager.can_open_position(symbol, state, current_day)
     risk_decision = decide_risk_entry(can_open, reason)
@@ -227,7 +267,13 @@ def _handle_buy_signal(
 
     try:
         filters = client.get_symbol_filters(symbol)
-        order_manager.open_long(signal, filters, state, total_equity, free_quote_balance)
+        order_manager.open_long(
+            signal,
+            filters,
+            state,
+            portfolio_snapshot.total_equity,
+            portfolio_snapshot.free_quote_balance,
+        )
         state_store.save(state)
     except (ExchangeAPIError, ValueError) as exc:
         record_api_error(
