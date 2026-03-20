@@ -95,8 +95,8 @@
 	target: 2026-03-20
 - `NEXT-05` Развести runtime error categories по policy реакции и уведомлениям.
 	owner: copilot
-	status: todo
-	target: 2026-04-12
+	status: done
+	target: 2026-03-20
 - `NEXT-06` Добавить startup summary notification после reconciliation.
 	owner: copilot
 	status: todo

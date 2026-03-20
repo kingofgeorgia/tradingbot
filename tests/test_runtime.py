@@ -75,3 +75,14 @@ class RuntimeHeartbeatTests(unittest.TestCase):
 
         self.assertEqual(len(runtime.notifier.messages), 1)
         self.assertIn("Bot started", runtime.notifier.messages[0])
+
+    def test_run_loop_sends_fatal_notification_with_policy_metadata(self) -> None:
+        runtime = self.make_runtime()
+
+        with self.assertRaisesRegex(RuntimeError, "fatal loop"):
+            with patch("binance_bot.services.runtime.process_cycle", side_effect=RuntimeError("fatal loop")):
+                run_loop(runtime)
+
+        self.assertEqual(len(runtime.notifier.messages), 2)
+        self.assertIn("Reaction: terminate-process", runtime.notifier.messages[1])
+        self.assertEqual(runtime.errors_journal.rows[0]["scope"], "main-loop")

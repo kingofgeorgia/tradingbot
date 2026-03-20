@@ -92,6 +92,7 @@ class CycleTests(unittest.TestCase):
 
         self.assertEqual(self.errors_journal.rows[0]["scope"], "portfolio")
         self.assertEqual(self.order_manager.logged_signals, [])
+        self.assertEqual(self.notifier.messages, [])
 
     def test_refresh_trading_day_saves_state(self) -> None:
         self.strategy.signals_by_symbol = {
@@ -136,6 +137,7 @@ class CycleTests(unittest.TestCase):
 
         self.assertEqual(self.errors_journal.rows[0]["scope"], "market-data")
         self.assertEqual(self.strategy.calls[0][0], "ETHUSDT")
+        self.assertEqual(self.notifier.messages, [])
 
     def test_hold_signal_updates_last_processed_candle_without_logging(self) -> None:
         self.strategy.signals_by_symbol = {
@@ -305,6 +307,8 @@ class CycleTests(unittest.TestCase):
         )
 
         self.assertEqual(self.errors_journal.rows[0]["scope"], "open-position")
+        self.assertEqual(len(self.notifier.messages), 1)
+        self.assertIn("Reaction: manual-review", self.notifier.messages[0])
 
     def test_no_new_entries_mode_skips_buy_execution(self) -> None:
         self.settings.runtime_mode = "no-new-entries"
@@ -420,6 +424,8 @@ class CycleTests(unittest.TestCase):
         )
 
         self.assertEqual(self.errors_journal.rows[0]["scope"], "close-position")
+        self.assertEqual(len(self.notifier.messages), 1)
+        self.assertIn("Reaction: manual-review", self.notifier.messages[0])
 
     def test_halt_reason_sends_notification(self) -> None:
         self.state.open_positions["BTCUSDT"] = Position(

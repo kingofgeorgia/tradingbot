@@ -80,7 +80,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - [src/binance_bot/core/state.py](../src/binance_bot/core/state.py) — JSON persistence layer с migration boundary по `schema_version`. Ключевые сущности: `StateStore`, `load()`, `save(state)`, `migrate_state_payload(...)`.
 - [src/binance_bot/core/journal.py](../src/binance_bot/core/journal.py) — append-only CSV journaling. Ключевые сущности: `CsvJournal`, `write(row)`.
 - [src/binance_bot/core/logging_setup.py](../src/binance_bot/core/logging_setup.py) — настройка логгеров. Ключевые сущности: `Loggers`, `configure_logging(...)`.
-- [src/binance_bot/core/errors.py](../src/binance_bot/core/errors.py) — классификация runtime errors. Ключевые сущности: `ErrorDescriptor`, `classify_runtime_error(...)`.
+- [src/binance_bot/core/errors.py](../src/binance_bot/core/errors.py) — классификация runtime errors с policy reaction и notification routing. Ключевые сущности: `ErrorDescriptor`, `classify_runtime_error(...)`.
 - [src/binance_bot/core/rounding.py](../src/binance_bot/core/rounding.py) — единая step-size rounding logic. Ключевая функция: `round_down_to_step(...)`.
 - [src/binance_bot/core/trade_execution.py](../src/binance_bot/core/trade_execution.py) — pure result models для BUY/SELL execution. Ключевые сущности: `OpenPositionResult`, `ClosePositionResult`, `build_open_position_result(...)`, `calculate_close_result(...)`.
 - [src/binance_bot/core/decisions.py](../src/binance_bot/core/decisions.py) — pure decision layer. Ключевые сущности: `RiskDecision`, `CloseDecision`, `SignalDecision`, `ReconciliationDecision`, `SymbolBlockDecision`, `StateRepairDecision`, `ManualRepairDecision`, `IssueAcknowledgementDecision`, `decide_risk_entry(...)`, `decide_position_close(...)`, `decide_signal_action(...)`, `decide_state_repair(...)`, `decide_reconciliation_action(...)`, `decide_symbol_block(...)`, `decide_manual_repair_action(...)`, `decide_unblock_allowed(...)`, `decide_issue_acknowledgement(...)`.
@@ -111,7 +111,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - [src/binance_bot/services/runtime.py](../src/binance_bot/services/runtime.py) — composition root, lifecycle loop и runtime heartbeat notifications; concrete Binance client подключается здесь как реализация exchange port. Ключевые сущности: `AppRuntime`, `build_runtime()`, `reconcile_startup(...)`, `run_loop(...)`.
 - [src/binance_bot/services/cycle.py](../src/binance_bot/services/cycle.py) — orchestration одного торгового цикла с effective per-symbol runtime policy для BUY/SELL execution. Ключевые сущности: `process_cycle(...)`, `_load_portfolio_snapshot(...)`, `_handle_sell_signal(...)`, `_handle_buy_signal(...)`, `_notify_halt_reason(...)`.
 - [src/binance_bot/services/position_monitor.py](../src/binance_bot/services/position_monitor.py) — управление уже открытыми позициями с учетом per-symbol `observe-only` override. Ключевая сущность: `manage_open_positions(...)`.
-- [src/binance_bot/services/error_handler.py](../src/binance_bot/services/error_handler.py) — единая запись runtime/API ошибок. Ключевые сущности: `utc_now_iso()`, `record_api_error(...)`.
+- [src/binance_bot/services/error_handler.py](../src/binance_bot/services/error_handler.py) — единая запись runtime/API ошибок с учетом `reaction` и `notify_operator`. Ключевые сущности: `utc_now_iso()`, `record_api_error(...)`.
 
 Навигация: [к operator flow](#operator-flow) | [к тестам](#tests) | [к содержанию](#содержание)
 

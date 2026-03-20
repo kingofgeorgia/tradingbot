@@ -15,7 +15,7 @@ from binance_bot.risk.manager import RiskManager
 from binance_bot.strategy.ema_cross import EmaCrossStrategy
 
 from binance_bot.services.cycle import process_cycle
-from binance_bot.services.error_handler import utc_now_iso
+from binance_bot.services.error_handler import record_api_error
 from binance_bot.services.reconciliation import apply_reconciliation_result, reconcile_runtime_state
 from binance_bot.services.status import build_runtime_status_report, format_runtime_health_notification, format_status_report
 
@@ -177,18 +177,15 @@ def run_loop(runtime: AppRuntime) -> None:
                 loggers=runtime.loggers,
             )
         except Exception as exc:
-            runtime.loggers.error.error("[critical/fatal-loop] Fatal error in trading loop: %s", exc, exc_info=True)
-            runtime.errors_journal.write(
-                {
-                    "timestamp_utc": utc_now_iso(),
-                    "scope": "main-loop",
-                    "symbol": "",
-                    "error_type": type(exc).__name__,
-                    "message": f"[critical/fatal-loop] {exc}",
-                    "mode": runtime.settings.app_mode,
-                }
+            record_api_error(
+                runtime.errors_journal,
+                runtime.notifier,
+                runtime.loggers,
+                runtime.settings.app_mode,
+                "main-loop",
+                "",
+                exc,
             )
-            runtime.notifier.send(f"[{runtime.settings.app_mode}] CRITICAL fatal bot error: {exc}")
             raise
 
         current_state = runtime.state_store.load()

@@ -69,6 +69,7 @@ class PositionMonitorTests(unittest.TestCase):
 
         self.assertEqual(self.order_manager.close_calls, [])
         self.assertEqual(self.errors_journal.rows[0]["scope"], "position-monitoring")
+        self.assertEqual(self.notifier.messages, [])
 
     def test_price_inside_range_does_not_close_position(self) -> None:
         self.client.latest_prices["BTCUSDT"] = 100.0
@@ -137,6 +138,8 @@ class PositionMonitorTests(unittest.TestCase):
         )
 
         self.assertEqual(self.errors_journal.rows[0]["scope"], "stop-loss-close")
+        self.assertEqual(len(self.notifier.messages), 1)
+        self.assertIn("Reaction: manual-review", self.notifier.messages[0])
 
     def test_take_profit_close_error_is_recorded(self) -> None:
         self.client.latest_prices["BTCUSDT"] = 105.0
@@ -154,6 +157,8 @@ class PositionMonitorTests(unittest.TestCase):
         )
 
         self.assertEqual(self.errors_journal.rows[0]["scope"], "take-profit-close")
+        self.assertEqual(len(self.notifier.messages), 1)
+        self.assertIn("Reaction: manual-review", self.notifier.messages[0])
 
     def test_processing_continues_after_error_for_one_symbol(self) -> None:
         self.state.open_positions["ETHUSDT"] = Position(

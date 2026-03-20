@@ -17,6 +17,7 @@
 - Настраиваемые heartbeat/summary notifications по runtime health и blocked symbols.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
+- Явная runtime error policy: warning/runtime-io ошибки журналируются без operator alert, а execution/fatal ошибки получают реакцию и уведомление.
 - Ограничения риска: лимит риска на сделку, размер позиции, число одновременно открытых позиций, дневной лимит убытка и блокировка после серии убытков.
 - Логи в консоль и файлы, CSV-журналы сигналов, сделок, ошибок, reconciliation и repair-history.
 - Telegram-уведомления о старте, сделках, API-ошибках, startup mismatch и recovery-сценариях.
