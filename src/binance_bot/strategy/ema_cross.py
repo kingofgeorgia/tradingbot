@@ -26,7 +26,14 @@ class EmaCrossStrategy:
         self._interval_minutes = self._parse_interval_minutes(interval)
         self._stale_data_multiplier = stale_data_multiplier
 
-    def evaluate(self, symbol: str, candles: list[Candle], last_processed_candle: int | None) -> TradeSignal:
+    def evaluate(
+        self,
+        symbol: str,
+        candles: list[Candle],
+        last_processed_candle: int | None,
+        *,
+        reference_time_utc: datetime | None = None,
+    ) -> TradeSignal:
         closed_candles = [candle for candle in candles if candle.is_closed]
         if len(closed_candles) < self._slow_period + 2:
             return TradeSignal(symbol, "HOLD", "not-enough-data", 0.0, 0.0, 0.0, 0)
@@ -35,7 +42,7 @@ class EmaCrossStrategy:
         if last_processed_candle and latest_closed.close_time <= last_processed_candle:
             return TradeSignal(symbol, "HOLD", "candle-already-processed", latest_closed.close_price, 0.0, 0.0, latest_closed.close_time)
 
-        if not self._is_fresh(latest_closed):
+        if not self._is_fresh(latest_closed, reference_time_utc=reference_time_utc):
             return TradeSignal(symbol, "HOLD", "stale-market-data", latest_closed.close_price, 0.0, 0.0, latest_closed.close_time)
 
         closes = [candle.close_price for candle in closed_candles]
@@ -77,9 +84,10 @@ class EmaCrossStrategy:
             candle_close_time=latest_closed.close_time,
         )
 
-    def _is_fresh(self, candle: Candle) -> bool:
+    def _is_fresh(self, candle: Candle, *, reference_time_utc: datetime | None = None) -> bool:
         candle_time = datetime.fromtimestamp(candle.close_time / 1000, tz=UTC)
-        age_seconds = (datetime.now(tz=UTC) - candle_time).total_seconds()
+        current_time = reference_time_utc or datetime.now(tz=UTC)
+        age_seconds = (current_time - candle_time).total_seconds()
         max_age_seconds = self._interval_minutes * 60 * self._stale_data_multiplier
         return age_seconds <= max_age_seconds
 

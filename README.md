@@ -26,6 +26,7 @@
 - `repair` и `unblock` поддерживают `--dry-run`, чтобы оператор мог проверить manual action без backup/state mutation и journal writes.
 - Команда `review` показывает явную manual review queue по unresolved startup/runtime issues, чтобы оператор видел приоритет, рекомендованное действие и последний manual action в одном месте.
 - При частичной недоступности portfolio API runtime теперь уходит в graceful degradation: цикл и SELL/monitoring path продолжаются, но новые BUY entries для этого цикла безопасно отключаются.
+- Появился отдельный strategy-only backtesting harness `python -m binance_bot.backtesting.harness`, который читает CSV свечей и строит backtest-отчет без reuse runtime/order execution path.
 - В `docs/architecture/operator-playbook.md` есть точный manual testnet checklist для blocked-сценариев NEXT-15..17.
 - Для Windows есть готовый PowerShell runbook в `docs/architecture/operator-testnet-powershell-runbook.md` и шаблон отчета в `docs/architecture/testnet-evidence-report-template.md`.
 - Для быстрого ручного прогона по `BTCUSDT` есть one-page runbook в `docs/architecture/operator-testnet-quick-runbook.md` и предзаполненный draft report в `docs/architecture/testnet-evidence-report-btcusdt-draft.md`.
@@ -33,7 +34,7 @@
 - Для `NEXT-15` есть отдельный fixed PowerShell block без переменных сценария в `docs/architecture/operator-testnet-next15-btcusdt-snippet.md`.
 - Для `NEXT-17` есть отдельный quick runbook в `docs/architecture/operator-testnet-next17-quick-runbook.md` и сценарный отчет в `docs/architecture/testnet-evidence-report-btcusdt-next17.md`.
 - По backlog сейчас нет открытых задач в `Now`; оставшийся ближайший слой состоит из user-blocked testnet validation задач `NEXT-15..17`.
-- Новый кандидатский `Now`-слой собран из `LATER-06`, `LATER-07`, `LATER-02`; `NOW-19` и `NOW-20` уже закрыты, открытым в этом слое остается `NOW-21` про отдельный backtesting harness.
+- Новый кандидатский `Now`-слой из `LATER-06`, `LATER-07`, `LATER-02` уже полностью закрыт; следующие незакрытые направления снова находятся в `Later` и в user-blocked `NEXT-15..17`.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
 - Явная runtime error policy: warning/runtime-io ошибки журналируются без operator alert, а execution/fatal ошибки получают реакцию и уведомление.
@@ -53,6 +54,7 @@
 - `src/binance_bot/services/cycle.py` — orchestration одного торгового цикла.
 - `src/binance_bot/services/position_monitor.py` — исполнение решений по открытым позициям.
 - `src/binance_bot/services/error_handler.py` — единая запись и уведомление по API-ошибкам.
+- `src/binance_bot/backtesting/harness.py` — отдельный strategy-only backtesting harness для CSV candles, summary report и JSON output без runtime/order side effects.
 - `src/binance_bot/config.py` — загрузка `.env`, валидация настроек и подготовка runtime-директорий.
 - `src/binance_bot/clients/binance_client.py` — REST-клиент Binance Spot.
 - `src/binance_bot/core/exchange.py` — exchange error и protocol-based port contracts между runtime/use-cases и конкретным Binance adapter.
@@ -233,6 +235,13 @@ python main.py
 ```
 
 ## Проверки
+
+Strategy-only backtest по CSV:
+
+```bash
+python -m binance_bot.backtesting.harness --symbol BTCUSDT --candles-csv data/btcusdt_15m.csv
+python -m binance_bot.backtesting.harness --symbol BTCUSDT --candles-csv data/btcusdt_15m.csv --json
+```
 
 Запуск тестов:
 

@@ -51,8 +51,9 @@
 	files: `src/binance_bot/services/cycle.py`, `tests/test_cycle.py`
 - `NOW-21` Сделать отдельный backtesting harness для strategy layer без смешивания с runtime execution кодом.
 	owner: copilot
-	status: todo
-	target: 2026-03-22
+	status: done
+	target: 2026-03-20
+	files: `src/binance_bot/backtesting/harness.py`, `src/binance_bot/strategy/ema_cross.py`, `tests/test_backtesting_harness.py`
 
 - `NOW-15` Добавить state backup snapshot перед любым manual repair действием.
 	owner: copilot
@@ -171,14 +172,16 @@
 
 ## Later
 
+Открытых кандидатов в текущем `Now`-слое больше нет: `LATER-06`, `LATER-07`, `LATER-02` были подняты и закрыты как `NOW-19..21` на `2026-03-20`.
+
 - `LATER-01` Добавить SQLite/Postgres event store, если CSV-журналов перестанет хватать для аудита и аналитики.
 	owner: user
 	status: todo
 	target: 2026-05-01
 - `LATER-02` Сделать отдельный backtesting harness для strategy layer без смешивания с runtime execution кодом.
 	owner: copilot
-	status: promoted-to-now
-	target: moved to `NOW-21` on 2026-03-20
+	status: done-via-now
+	target: completed as `NOW-21` on 2026-03-20
 - `LATER-03` Вынести operator/status слой в небольшой локальный dashboard или TUI, если CLI станет узким местом.
 	owner: user
 	status: todo

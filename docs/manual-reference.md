@@ -102,6 +102,11 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 
 - [src/binance_bot/strategy/ema_cross.py](../src/binance_bot/strategy/ema_cross.py) — генерация сигналов на EMA crossover без side effects. Ключевые сущности: `TradeSignal`, `EmaCrossStrategy`, `evaluate(...)`.
 
+### Backtesting Layer
+
+- [src/binance_bot/backtesting/__init__.py](../src/binance_bot/backtesting/__init__.py) — marker file для отдельного backtesting-пакета.
+- [src/binance_bot/backtesting/harness.py](../src/binance_bot/backtesting/harness.py) — strategy-only backtesting harness по CSV candles без runtime/order reuse. Ключевые сущности: `BacktestTrade`, `BacktestReport`, `load_candles_from_csv(...)`, `run_backtest(...)`, `format_backtest_report(...)`, `format_backtest_report_json(...)`, `run_cli(...)`.
+
 ### Risk Layer
 
 - [src/binance_bot/risk/manager.py](../src/binance_bot/risk/manager.py) — risk rules, sizing, daily halt logic и применение per-symbol sizing overrides. Ключевые сущности: `RiskManager`, `refresh_trading_day(...)`, `can_open_position(...)`, `calculate_order_quantity(...)`, `register_closed_trade(...)`.
@@ -142,6 +147,8 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - `python main.py repair BTCUSDT restore-from-exchange --dry-run`
 - `python main.py unblock BTCUSDT`
 - `python main.py unblock BTCUSDT --dry-run`
+- `python -m binance_bot.backtesting.harness --symbol BTCUSDT --candles-csv path/to/candles.csv`
+- `python -m binance_bot.backtesting.harness --symbol BTCUSDT --candles-csv path/to/candles.csv --json`
 
 - [src/binance_bot/services/reconciliation.py](../src/binance_bot/services/reconciliation.py) — startup reconciliation и блокировка mismatch scenarios. Ключевые сущности: `load_exchange_snapshot(...)`, `reconcile_symbol_state(...)`, `reconcile_runtime_state(...)`, `apply_reconciliation_result(...)`.
 - [src/binance_bot/services/repair.py](../src/binance_bot/services/repair.py) — manual repair и unblock flow, включая text/json paths для `inspect`. Ключевые сущности: `inspect_runtime_issues(...)`, `acknowledge_issue(...)`, `repair_symbol_state(...)`, `unblock_symbol(...)`, `_backup_state_before_manual_action(...)`.
@@ -184,6 +191,7 @@ Policy note:
 - `review` показывает только unresolved queue items по blocked/suspect/startup-issue символам, а `review --json` отдает отдельный machine-readable payload с `queue_size` и `manual_review_queue`.
 - `inspect --json` теперь дополнительно включает `manual_review_queue`, чтобы operator/status snapshot и focused queue использовали один и тот же источник данных.
 - При partial failure в `get_portfolio_value(...)` или `get_asset_free_balance(...)` runtime-cycle теперь не обрывается целиком: day refresh пропускается только если недоступен equity, monitoring и SELL flow продолжаются, а новые BUY entries безопасно suppress-ятся на один цикл.
+- `python -m binance_bot.backtesting.harness` использует отдельный strategy-only evaluation path: для backtest свечи оцениваются относительно своего historical close time, а не относительно текущего runtime `now`, поэтому historical CSV не деградирует в `stale-market-data`.
 - `repair ... --dry-run` и `unblock ... --dry-run` проходят тот же decision/reconciliation path, но не делают backup, не сохраняют state и не пишут repair journal.
 - `startup-check-only` smoke теперь прогоняется как subprocess path: reconciliation выполняется, startup summary отправляется, trading loop не стартует.
 - `observe-only` smoke теперь прогоняется как subprocess path с `RUN_ONCE`: reconciliation и один runtime cycle выполняются, signal logging остается активным, но execution не происходит.
@@ -222,6 +230,7 @@ Policy note:
 - [tests/test_cli_smoke.py](../tests/test_cli_smoke.py) — subprocess-level smoke tests для operator commands и runtime mode entrypoints. Ключевая сущность: `CliSmokeTests`.
 - [tests/test_status.py](../tests/test_status.py) — тесты operator status report. Ключевая сущность: `StatusTests`.
 - [tests/test_status_json_format.py](../tests/test_status_json_format.py) — regression-тест на стабильность top-level и per-symbol JSON keys для `inspect --json`. Ключевая сущность: `StatusJsonFormatTests`.
+- [tests/test_backtesting_harness.py](../tests/test_backtesting_harness.py) — тесты отдельного backtesting harness, historical-candle path и JSON summary contract. Ключевая сущность: `BacktestingHarnessTests`.
 - [tests/test_state_fixtures.py](../tests/test_state_fixtures.py) — regression fixtures для state compatibility. Ключевая сущность: `StateFixturesTests`.
 
 Навигация: [к модулю](#modules) | [к operator flow](#operator-flow) | [к содержанию](#содержание)
