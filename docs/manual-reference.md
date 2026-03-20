@@ -58,6 +58,8 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - [docs/architecture/operator-playbook.md](./architecture/operator-playbook.md) также содержит точный manual testnet checklist для blocked-сценариев `NEXT-15`, `NEXT-16`, `NEXT-17`.
 - [docs/architecture/operator-testnet-powershell-runbook.md](./architecture/operator-testnet-powershell-runbook.md) — готовый Windows PowerShell runbook для сбора evidence по `NEXT-15`, `NEXT-16`, `NEXT-17`.
 - [docs/architecture/testnet-evidence-report-template.md](./architecture/testnet-evidence-report-template.md) — шаблон отчета для фиксации результатов ручного testnet-прогона.
+- [docs/architecture/operator-testnet-quick-runbook.md](./architecture/operator-testnet-quick-runbook.md) — one-page quick runbook для `BTCUSDT` по сценариям `NEXT-15` и `NEXT-16`.
+- [docs/architecture/testnet-evidence-report-btcusdt-draft.md](./architecture/testnet-evidence-report-btcusdt-draft.md) — предзаполненный draft report для ручного testnet-прогона по `BTCUSDT`.
 
 Навигация: [к модулю](#modules) | [к operator flow](#operator-flow) | [к тестам](#tests) | [к содержанию](#содержание)
 
@@ -138,6 +140,8 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - В `operator-playbook` теперь зафиксирован пошаговый manual testnet checklist для сценариев `local-position-missing-on-exchange`, `exchange-position-without-local-state` и длительной ревизии CSV/log artifacts.
 - [docs/architecture/operator-testnet-powershell-runbook.md](./architecture/operator-testnet-powershell-runbook.md) — готовые PowerShell команды для snapshot, startup-check-only run, checkpoint metrics и archive.
 - [docs/architecture/testnet-evidence-report-template.md](./architecture/testnet-evidence-report-template.md) — шаблон для итоговой записи evidence и operator conclusions.
+- [docs/architecture/operator-testnet-quick-runbook.md](./architecture/operator-testnet-quick-runbook.md) — сокращенный runbook без общего scaffolding для быстрого прогона `NEXT-15` и `NEXT-16`.
+- [docs/architecture/testnet-evidence-report-btcusdt-draft.md](./architecture/testnet-evidence-report-btcusdt-draft.md) — готовая заготовка отчета с полями под `BTCUSDT`.
 
 Порядок работы:
 1. Запустить `inspect` и определить problem symbols.

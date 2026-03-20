@@ -38,6 +38,8 @@ Companion docs:
 
 - `docs/architecture/operator-testnet-powershell-runbook.md` for ready-to-run Windows PowerShell commands.
 - `docs/architecture/testnet-evidence-report-template.md` for the final evidence report.
+- `docs/architecture/operator-testnet-quick-runbook.md` for a one-page BTCUSDT quick path covering `NEXT-15` and `NEXT-16`.
+- `docs/architecture/testnet-evidence-report-btcusdt-draft.md` for a prefilled BTCUSDT report draft.
 
 ### Pre-flight
 
