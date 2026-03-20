@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from datetime import datetime, timezone
 from dataclasses import dataclass
 
 from binance_bot.clients.binance_client import BinanceSpotClient
@@ -8,7 +9,8 @@ from binance_bot.config import Settings, ensure_runtime_directories, load_settin
 from binance_bot.core.exchange import ExchangeRuntimePort
 from binance_bot.core.journal import CsvJournal
 from binance_bot.core.logging_setup import Loggers, configure_logging
-from binance_bot.core.state import StateStore
+from binance_bot.core.models import RepairRecord
+from binance_bot.core.state import StateLoadError, StateStore
 from binance_bot.notify.telegram import TelegramNotifier
 from binance_bot.orders.manager import OrderManager
 from binance_bot.risk.manager import RiskManager
@@ -40,6 +42,57 @@ class AppRuntime:
     strategy: EmaCrossStrategy
     risk_manager: RiskManager
     order_manager: OrderManager
+
+
+def ensure_runtime_state_file(
+    *,
+    settings: Settings,
+    state_store: StateStore,
+    repair_journal: CsvJournal,
+    notifier: TelegramNotifier,
+    loggers: Loggers,
+) -> None:
+    try:
+        state_store.load()
+        return
+    except StateLoadError as exc:
+        error_message = str(exc)
+        backup_file = state_store.recover(backups_dir=settings.state_backups_dir)
+
+    timestamp = _utc_now_iso()
+    backup_label = backup_file.name if backup_file is not None else "none"
+    note = f"Recovered runtime state from invalid state.json: {error_message}. Backup: {backup_label}."
+
+    repair_journal.write(
+        {
+            "timestamp_utc": timestamp,
+            "symbol": "__runtime__",
+            "action": "recover-state-file",
+            "status": "recovered",
+            "note": note,
+            "mode": settings.app_mode,
+        }
+    )
+
+    recovered_state = state_store.load()
+    recovered_state.repair_history.append(
+        RepairRecord(
+            symbol="__runtime__",
+            action="recover-state-file",
+            status="recovered",
+            note=note,
+            timestamp_utc=timestamp,
+        )
+    )
+    state_store.save(recovered_state)
+
+    loggers.error.error(note)
+    notifier.send(
+        f"[{settings.app_mode}] State file recovery applied\n"
+        f"Reason: {error_message}\n"
+        f"Backup: {backup_label}\n"
+        "Runtime state reset to empty local snapshot"
+    )
 
 
 def build_runtime() -> AppRuntime:
@@ -84,6 +137,13 @@ def build_runtime() -> AppRuntime:
     notifier = TelegramNotifier(settings.telegram_bot_token, settings.telegram_chat_id, loggers.error)
     client: ExchangeRuntimePort = BinanceSpotClient(settings)
     state_store = StateStore(settings.state_file)
+    ensure_runtime_state_file(
+        settings=settings,
+        state_store=state_store,
+        repair_journal=repair_journal,
+        notifier=notifier,
+        loggers=loggers,
+    )
 
     strategy = EmaCrossStrategy(
         fast_period=settings.fast_ema_period,
@@ -219,3 +279,7 @@ def run_loop(runtime: AppRuntime) -> None:
             break
 
         time.sleep(runtime.settings.loop_interval_seconds)
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()

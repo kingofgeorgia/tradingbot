@@ -3,6 +3,7 @@ from __future__ import annotations
 # ruff: noqa: E402
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -17,7 +18,8 @@ if str(SRC_DIR) not in sys.path:
 
 from binance_bot.core.exchange import ExchangeRuntimePort
 from binance_bot.core.models import BotState, ExchangePositionSnapshot, StartupIssue
-from binance_bot.services.runtime import reconcile_startup, run_loop
+from binance_bot.core.state import StateStore
+from binance_bot.services.runtime import ensure_runtime_state_file, reconcile_startup, run_loop
 from tests.fakes import FakeJournal, FakeLoggers, FakeNotifier, FakeStateStore, make_settings
 
 
@@ -200,3 +202,59 @@ class StartupSummaryNotificationTests(unittest.TestCase):
         self.assertIn("Startup mismatch for BTCUSDT", runtime.notifier.messages[0])
         self.assertIn("Startup summary", runtime.notifier.messages[1])
         self.assertIn("Blocked symbols: BTCUSDT", runtime.notifier.messages[1])
+
+
+class StateRecoveryTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.settings = make_settings()
+        self.settings.data_dir = Path(self.temp_dir.name)
+        self.store = StateStore(self.settings.state_file)
+        self.repair_journal = FakeJournal()
+        self.notifier = FakeNotifier()
+        self.loggers = FakeLoggers()
+
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
+
+    def test_ensure_runtime_state_file_recovers_invalid_json(self) -> None:
+        self.settings.state_file.parent.mkdir(parents=True, exist_ok=True)
+        self.settings.state_file.write_text('{"broken": ', encoding="utf-8")
+
+        ensure_runtime_state_file(
+            settings=self.settings,
+            state_store=self.store,
+            repair_journal=self.repair_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        recovered_state = self.store.load()
+        expected_state = BotState()
+        expected_state.repair_history = recovered_state.repair_history
+
+        self.assertEqual(recovered_state.to_dict(), expected_state.to_dict())
+        self.assertEqual(len(self.repair_journal.rows), 1)
+        self.assertEqual(self.repair_journal.rows[0]["action"], "recover-state-file")
+        self.assertEqual(len(self.notifier.messages), 1)
+        self.assertIn("State file recovery applied", self.notifier.messages[0])
+
+        backup_files = list(self.settings.state_backups_dir.glob("*__runtime__state-load-recovery.json"))
+        self.assertEqual(len(backup_files), 1)
+        self.assertEqual(backup_files[0].read_text(encoding="utf-8"), '{"broken": ')
+        self.assertEqual(len(recovered_state.repair_history), 1)
+
+    def test_ensure_runtime_state_file_recovers_future_schema_payload(self) -> None:
+        self.settings.state_file.parent.mkdir(parents=True, exist_ok=True)
+        self.settings.state_file.write_text('{"schema_version": 999, "open_positions": {}}', encoding="utf-8")
+
+        ensure_runtime_state_file(
+            settings=self.settings,
+            state_store=self.store,
+            repair_journal=self.repair_journal,
+            notifier=self.notifier,
+            loggers=self.loggers,
+        )
+
+        self.assertEqual(self.store.load().schema_version, 1)
+        self.assertIn("Unsupported state schema_version", self.notifier.messages[0])

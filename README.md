@@ -14,6 +14,7 @@
 - Безопасный startup reconciliation перед торговым циклом: восстановление recoverable-позиций и блокировка mismatch-сценариев.
 - Operator workflow для `inspect`, `acknowledge`, `repair` и `unblock` по проблемным символам.
 - Версионированный `state.json` с `schema_version` и backward-compatible migration path для локального runtime state.
+- Автоматический recovery path для битого или несовместимого `state.json`: backup исходного файла, reset в пустой local state и operator notification.
 - Настраиваемые heartbeat/summary notifications по runtime health и blocked symbols.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
@@ -27,7 +28,7 @@
 
 - `main.py` — корневая точка входа, добавляет `src` в `PYTHONPATH` и вызывает пакетный entrypoint.
 - `src/binance_bot/main.py` — тонкий bootstrap, который собирает runtime и запускает loop.
-- `src/binance_bot/services/runtime.py` — composition root и жизненный цикл приложения.
+- `src/binance_bot/services/runtime.py` — composition root, жизненный цикл приложения и startup recovery для невалидного `state.json`.
 - `src/binance_bot/services/reconciliation.py` — startup/restart reconciliation и safety guard перед loop.
 - `src/binance_bot/services/repair.py` — manual repair flow для blocked symbols и startup issues.
 - `src/binance_bot/services/status.py` — runtime status summary для operator flow и observability.
@@ -43,7 +44,7 @@
 - `src/binance_bot/notify/telegram.py` — уведомления в Telegram.
 - `src/binance_bot/use_cases/` — application use-cases для открытия и закрытия позиций.
 - `src/binance_bot/core/` — модели, state store, логирование, CSV-журналы, pure decisions и helpers округления.
-- `data/state.json` — versioned persistent state payload с `schema_version` и migration boundary на загрузке.
+- `data/state.json` — versioned persistent state payload с `schema_version`, migration boundary и auto-recovery через backup при битом/несовместимом содержимом.
 - `docs/architecture/` — архитектурные инварианты и overview проекта.
 - `docs/architecture/changelog.md` — хронология архитектурных фаз и ключевых изменений по этапам.
 - `docs/project-purpose.md` — подробное описание того, в чем главная суть проекта.

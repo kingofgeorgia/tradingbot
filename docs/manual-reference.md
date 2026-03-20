@@ -77,7 +77,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 
 - [src/binance_bot/core/exchange.py](../src/binance_bot/core/exchange.py) — exchange error и protocol-based port contracts для runtime/services/use-cases. Ключевые сущности: `ExchangeAPIError`, `ExchangeExecutionPort`, `ExchangeMarketDataPort`, `ExchangeReconciliationPort`, `ExchangeRuntimePort`.
 - [src/binance_bot/core/models.py](../src/binance_bot/core/models.py) — domain models и persistent runtime state, включая `schema_version` в `BotState`. Ключевые классы: `Candle`, `SymbolFilters`, `Position`, `ExchangePositionSnapshot`, `StartupIssue`, `SymbolRuntimeStatus`, `ReconciliationResult`, `RepairRecord`, `RuntimeStatusReport`, `BotState`.
-- [src/binance_bot/core/state.py](../src/binance_bot/core/state.py) — JSON persistence layer с migration boundary по `schema_version`. Ключевые сущности: `StateStore`, `load()`, `save(state)`, `migrate_state_payload(...)`.
+- [src/binance_bot/core/state.py](../src/binance_bot/core/state.py) — JSON persistence layer с migration boundary по `schema_version` и recovery backup path для битого/несовместимого state payload. Ключевые сущности: `StateLoadError`, `StateStore`, `load()`, `recover(...)`, `save(state)`, `migrate_state_payload(...)`.
 - [src/binance_bot/core/journal.py](../src/binance_bot/core/journal.py) — append-only CSV journaling. Ключевые сущности: `CsvJournal`, `write(row)`.
 - [src/binance_bot/core/logging_setup.py](../src/binance_bot/core/logging_setup.py) — настройка логгеров. Ключевые сущности: `Loggers`, `configure_logging(...)`.
 - [src/binance_bot/core/errors.py](../src/binance_bot/core/errors.py) — классификация runtime errors с policy reaction и notification routing. Ключевые сущности: `ErrorDescriptor`, `classify_runtime_error(...)`.
@@ -108,7 +108,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 
 ### Service Layer
 
-- [src/binance_bot/services/runtime.py](../src/binance_bot/services/runtime.py) — composition root, lifecycle loop и runtime heartbeat notifications; concrete Binance client подключается здесь как реализация exchange port. Ключевые сущности: `AppRuntime`, `build_runtime()`, `reconcile_startup(...)`, `run_loop(...)`.
+- [src/binance_bot/services/runtime.py](../src/binance_bot/services/runtime.py) — composition root, lifecycle loop, runtime heartbeat notifications и startup recovery для невалидного `state.json`; concrete Binance client подключается здесь как реализация exchange port. Ключевые сущности: `AppRuntime`, `ensure_runtime_state_file(...)`, `build_runtime()`, `reconcile_startup(...)`, `run_loop(...)`.
 - [src/binance_bot/services/cycle.py](../src/binance_bot/services/cycle.py) — orchestration одного торгового цикла с effective per-symbol runtime policy для BUY/SELL execution. Ключевые сущности: `process_cycle(...)`, `_load_portfolio_snapshot(...)`, `_handle_sell_signal(...)`, `_handle_buy_signal(...)`, `_notify_halt_reason(...)`.
 - [src/binance_bot/services/position_monitor.py](../src/binance_bot/services/position_monitor.py) — управление уже открытыми позициями с учетом per-symbol `observe-only` override. Ключевая сущность: `manage_open_positions(...)`.
 - [src/binance_bot/services/error_handler.py](../src/binance_bot/services/error_handler.py) — единая запись runtime/API ошибок с учетом `reaction` и `notify_operator`. Ключевые сущности: `utc_now_iso()`, `record_api_error(...)`.

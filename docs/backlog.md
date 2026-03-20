@@ -103,8 +103,8 @@
 	target: 2026-03-20
 - `NEXT-07` Добавить recovery path для битого или частично несовместимого `state.json`.
 	owner: copilot
-	status: todo
-	target: 2026-04-16
+	status: done
+	target: 2026-03-20
 - `NEXT-08` Добавить per-symbol runtime status categories и более подробный inspect output.
 	owner: copilot
 	status: todo
