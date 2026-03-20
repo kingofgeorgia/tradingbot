@@ -28,6 +28,7 @@
 - Для Windows есть готовый PowerShell runbook в `docs/architecture/operator-testnet-powershell-runbook.md` и шаблон отчета в `docs/architecture/testnet-evidence-report-template.md`.
 - Для быстрого ручного прогона по `BTCUSDT` есть one-page runbook в `docs/architecture/operator-testnet-quick-runbook.md` и предзаполненный draft report в `docs/architecture/testnet-evidence-report-btcusdt-draft.md`.
 - Для самого короткого запуска есть minimal snippet в `docs/architecture/operator-testnet-one-shot-snippet.md`, а для сценариев `NEXT-15` и `NEXT-16` есть отдельные BTCUSDT report drafts.
+- Для `NEXT-15` есть отдельный fixed PowerShell block без переменных сценария в `docs/architecture/operator-testnet-next15-btcusdt-snippet.md`.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
 - Явная runtime error policy: warning/runtime-io ошибки журналируются без operator alert, а execution/fatal ошибки получают реакцию и уведомление.

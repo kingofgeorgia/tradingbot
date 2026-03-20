@@ -127,6 +127,8 @@
 ## Cross-phase
 
 - Добавлен встроенный backlog проекта как рабочий planning artifact для следующих итераций.
+- Подготовлены manual testnet operator docs, включая fixed PowerShell block для `NEXT-15` по `BTCUSDT`.
 
 Ключевые модули:
 - [docs/backlog.md](../backlog.md)
+- [docs/architecture/operator-testnet-next15-btcusdt-snippet.md](./operator-testnet-next15-btcusdt-snippet.md)

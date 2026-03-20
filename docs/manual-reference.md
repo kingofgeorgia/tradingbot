@@ -63,6 +63,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - [docs/architecture/operator-testnet-one-shot-snippet.md](./architecture/operator-testnet-one-shot-snippet.md) — минимальный PowerShell snippet для одного evidence run без полного runbook.
 - [docs/architecture/testnet-evidence-report-btcusdt-next15.md](./architecture/testnet-evidence-report-btcusdt-next15.md) — сценарный отчет-заготовка для `NEXT-15`.
 - [docs/architecture/testnet-evidence-report-btcusdt-next16.md](./architecture/testnet-evidence-report-btcusdt-next16.md) — сценарный отчет-заготовка для `NEXT-16`.
+- [docs/architecture/operator-testnet-next15-btcusdt-snippet.md](./architecture/operator-testnet-next15-btcusdt-snippet.md) — фиксированный PowerShell block именно для `NEXT-15` по `BTCUSDT`.
 
 Навигация: [к модулю](#modules) | [к operator flow](#operator-flow) | [к тестам](#tests) | [к содержанию](#содержание)
 
@@ -147,6 +148,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - [docs/architecture/testnet-evidence-report-btcusdt-draft.md](./architecture/testnet-evidence-report-btcusdt-draft.md) — готовая заготовка отчета с полями под `BTCUSDT`.
 - [docs/architecture/operator-testnet-one-shot-snippet.md](./architecture/operator-testnet-one-shot-snippet.md) — минимальный snippet для быстрого baseline + `startup-check-only` run.
 - [docs/architecture/testnet-evidence-report-btcusdt-next15.md](./architecture/testnet-evidence-report-btcusdt-next15.md) и [docs/architecture/testnet-evidence-report-btcusdt-next16.md](./architecture/testnet-evidence-report-btcusdt-next16.md) — отдельные сценарные формы отчета вместо одного общего черновика.
+- [docs/architecture/operator-testnet-next15-btcusdt-snippet.md](./architecture/operator-testnet-next15-btcusdt-snippet.md) — готовый single-purpose block для быстрого ручного прогона `NEXT-15`.
 
 Порядок работы:
 1. Запустить `inspect` и определить problem symbols.

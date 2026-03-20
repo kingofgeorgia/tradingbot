@@ -134,7 +134,7 @@
 	owner: user
 	status: blocked
 	target: 2026-04-25
-	note: manual checklist в `docs/architecture/operator-playbook.md`, quick runbook в `docs/architecture/operator-testnet-quick-runbook.md`, сценарный отчет в `docs/architecture/testnet-evidence-report-btcusdt-next15.md`
+	note: manual checklist в `docs/architecture/operator-playbook.md`, fixed snippet в `docs/architecture/operator-testnet-next15-btcusdt-snippet.md`, quick runbook в `docs/architecture/operator-testnet-quick-runbook.md`, сценарный отчет в `docs/architecture/testnet-evidence-report-btcusdt-next15.md`
 - `NEXT-16` Прогнать testnet-сценарий `exchange position restored into local state` и обновить operator playbook.
 	owner: user
 	status: blocked
