@@ -44,8 +44,8 @@
 
 - `NOW-15` Добавить state backup snapshot перед любым manual repair действием.
 	owner: copilot
-	status: todo
-	target: 2026-03-29
+	status: done
+	target: 2026-03-20
 - `NOW-18` Добавить idempotency tests для повторного startup reconciliation без лишних side effects.
 	owner: copilot
 	status: todo
