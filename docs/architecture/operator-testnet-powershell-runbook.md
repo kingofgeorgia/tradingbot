@@ -7,6 +7,7 @@
 - Использовать только с `APP_MODE=demo`.
 - Запускать из корня репозитория.
 - Перед любыми manual repair actions убедиться, что бот не запущен в другом окне.
+- Перед запуском сценария свериться с `docs/architecture/operator-testnet-manual-execution-order.md`, чтобы не пропустить baseline capture и exit gates между `NEXT-15`, `NEXT-16`, `NEXT-17`.
 
 ## Session setup
 
@@ -175,4 +176,4 @@ Compress-Archive -Path $EvidenceDir -DestinationPath "$EvidenceDir.zip" -Force
 
 ## Operator note
 
-After the run, fill the report template in `docs/architecture/testnet-evidence-report-template.md` and attach paths to the collected evidence directory.
+After the run, fill the report template in `docs/architecture/testnet-evidence-report-template.md`, attach paths to the collected evidence directory and update the matching scenario sheet from `docs/architecture/operator-testnet-manual-execution-order.md`.

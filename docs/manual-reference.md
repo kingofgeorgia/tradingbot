@@ -66,7 +66,8 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - [docs/architecture/operator-testnet-next15-btcusdt-snippet.md](./architecture/operator-testnet-next15-btcusdt-snippet.md) — фиксированный PowerShell block именно для `NEXT-15` по `BTCUSDT`.
 - [docs/architecture/operator-testnet-next17-quick-runbook.md](./architecture/operator-testnet-next17-quick-runbook.md) — сокращенный PowerShell runbook именно для `NEXT-17`.
 - [docs/architecture/testnet-evidence-report-btcusdt-next17.md](./architecture/testnet-evidence-report-btcusdt-next17.md) — сценарный отчет-заготовка для `NEXT-17`.
-- Текущее planning state: открытых `Now`-задач нет; незакрытый ближайший слой находится в blocked `NEXT-15..17` и в секции `Later`.
+- [docs/architecture/operator-testnet-manual-execution-order.md](./architecture/operator-testnet-manual-execution-order.md) — единый orchestration-sheet для безопасного порядка прогона `NEXT-15`, `NEXT-16`, `NEXT-17`.
+- Текущее planning state: активный операторский фокус находится в blocked `NEXT-15..17`; следующий кандидатский `Now`-набор уже собран как `NOW-22..24`, но его лучше запускать после ручного evidence.
 
 Навигация: [к модулю](#modules) | [к operator flow](#operator-flow) | [к тестам](#tests) | [к содержанию](#содержание)
 
@@ -165,6 +166,7 @@ One-line summary: [docs/project-purpose.md](./project-purpose.md) — зачем
 - [docs/architecture/operator-testnet-next15-btcusdt-snippet.md](./architecture/operator-testnet-next15-btcusdt-snippet.md) — готовый single-purpose block для быстрого ручного прогона `NEXT-15`.
 - [docs/architecture/operator-testnet-next17-quick-runbook.md](./architecture/operator-testnet-next17-quick-runbook.md) — quick path для длинного runtime observation без полного общего runbook.
 - [docs/architecture/testnet-evidence-report-btcusdt-next17.md](./architecture/testnet-evidence-report-btcusdt-next17.md) — отдельная форма отчета под `NEXT-17` с полями по росту CSV/log файлов.
+- [docs/architecture/operator-testnet-manual-execution-order.md](./architecture/operator-testnet-manual-execution-order.md) — единый порядок запуска, go/no-go gates и required evidence package для фактического закрытия `NEXT-15..17`.
 
 Порядок работы:
 1. Запустить `inspect` и определить problem symbols.
@@ -192,6 +194,7 @@ Policy note:
 - `inspect --json` теперь дополнительно включает `manual_review_queue`, чтобы operator/status snapshot и focused queue использовали один и тот же источник данных.
 - При partial failure в `get_portfolio_value(...)` или `get_asset_free_balance(...)` runtime-cycle теперь не обрывается целиком: day refresh пропускается только если недоступен equity, monitoring и SELL flow продолжаются, а новые BUY entries безопасно suppress-ятся на один цикл.
 - `python -m binance_bot.backtesting.harness` использует отдельный strategy-only evaluation path: для backtest свечи оцениваются относительно своего historical close time, а не относительно текущего runtime `now`, поэтому historical CSV не деградирует в `stale-market-data`.
+- Для фактического прогона `NEXT-15..17` сначала используется coordination-sheet, а уже потом конкретный сценарный runbook; это снижает риск пропустить baseline capture, dry-run evidence или post-run archive.
 - `repair ... --dry-run` и `unblock ... --dry-run` проходят тот же decision/reconciliation path, но не делают backup, не сохраняют state и не пишут repair journal.
 - `startup-check-only` smoke теперь прогоняется как subprocess path: reconciliation выполняется, startup summary отправляется, trading loop не стартует.
 - `observe-only` smoke теперь прогоняется как subprocess path с `RUN_ONCE`: reconciliation и один runtime cycle выполняются, signal logging остается активным, но execution не происходит.

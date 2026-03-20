@@ -33,8 +33,8 @@
 - Для самого короткого запуска есть minimal snippet в `docs/architecture/operator-testnet-one-shot-snippet.md`, а для сценариев `NEXT-15` и `NEXT-16` есть отдельные BTCUSDT report drafts.
 - Для `NEXT-15` есть отдельный fixed PowerShell block без переменных сценария в `docs/architecture/operator-testnet-next15-btcusdt-snippet.md`.
 - Для `NEXT-17` есть отдельный quick runbook в `docs/architecture/operator-testnet-next17-quick-runbook.md` и сценарный отчет в `docs/architecture/testnet-evidence-report-btcusdt-next17.md`.
-- По backlog сейчас нет открытых задач в `Now`; оставшийся ближайший слой состоит из user-blocked testnet validation задач `NEXT-15..17`.
-- Новый кандидатский `Now`-слой из `LATER-06`, `LATER-07`, `LATER-02` уже полностью закрыт; следующие незакрытые направления снова находятся в `Later` и в user-blocked `NEXT-15..17`.
+- Для последовательного ручного прогона `NEXT-15..17` есть единый coordination-sheet в `docs/architecture/operator-testnet-manual-execution-order.md`.
+- По backlog ближайший операторский фокус сейчас находится в user-blocked `NEXT-15..17`, а следующий кандидатский `Now`-набор собран как `NOW-22..24` из оставшихся `Later` и привязан к фактическому operator evidence.
 - Per-symbol overrides для runtime policy и risk sizing поверх общего `.env`-профиля.
 - Exchange port поверх Binance adapter для более чистых service/use-case boundaries и test doubles.
 - Явная runtime error policy: warning/runtime-io ошибки журналируются без operator alert, а execution/fatal ошибки получают реакцию и уведомление.
@@ -67,6 +67,7 @@
 - `data/state.json` — versioned persistent state payload с `schema_version`, migration boundary и auto-recovery через backup при битом/несовместимом содержимом.
 - `docs/architecture/` — архитектурные инварианты и overview проекта.
 - `docs/architecture/changelog.md` — хронология архитектурных фаз и ключевых изменений по этапам.
+- `docs/architecture/operator-testnet-manual-execution-order.md` — единый порядок прогона `NEXT-15..17`, gates перехода между сценариями и список обязательного evidence.
 - `docs/project-purpose.md` — подробное описание того, в чем главная суть проекта.
 - `docs/manual-reference.md` — индекс полного технического manual по проекту.
 - `docs/backlog.md` — рабочий backlog проекта с приоритетами `Now / Next / Later / Not now`.
@@ -126,6 +127,13 @@ python main.py repair BTCUSDT restore-from-exchange --dry-run
 python main.py unblock BTCUSDT
 python main.py unblock BTCUSDT --dry-run
 ```
+
+Для ручного закрытия `NEXT-15..17` используйте сначала coordination-sheet, затем соответствующий сценарный runbook:
+
+- `docs/architecture/operator-testnet-manual-execution-order.md`
+- `docs/architecture/operator-testnet-next15-btcusdt-snippet.md`
+- `docs/architecture/operator-testnet-quick-runbook.md`
+- `docs/architecture/operator-testnet-next17-quick-runbook.md`
 
 ## Runtime modes
 

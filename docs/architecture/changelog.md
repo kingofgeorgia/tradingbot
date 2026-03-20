@@ -133,6 +133,8 @@
 - Сформирован новый кандидатский `Now`-слой из `LATER-06`, `LATER-07`, `LATER-02`; `NOW-19` закрыт через explicit manual review queue, `review` / `review --json` и расширенный status payload.
 - `NOW-20` закрыт через graceful degradation в `cycle`: partial portfolio API failures больше не обрывают весь runtime-cycle, а переводят его в safe no-new-entry path на один проход.
 - `NOW-21` закрыт через отдельный strategy-only backtesting harness с CSV loader, text/JSON summary и historical evaluation path без смешивания с runtime execution кодом.
+- Сформирован следующий кандидатский `Now`-набор из оставшихся `Later`: `NOW-22..24`, но он привязан к фактическому manual evidence из `NEXT-15..17`, а не запускается вслепую.
+- Для `NEXT-15..17` добавлен единый operator coordination-sheet с рекомендованным порядком прогона, go/no-go gates и required evidence package.
 
 Ключевые модули:
 - [docs/backlog.md](../backlog.md)
@@ -145,3 +147,4 @@
 - [src/binance_bot/services/cycle.py](../src/binance_bot/services/cycle.py)
 - [src/binance_bot/backtesting/harness.py](../src/binance_bot/backtesting/harness.py)
 - [src/binance_bot/strategy/ema_cross.py](../src/binance_bot/strategy/ema_cross.py)
+- [docs/architecture/operator-testnet-manual-execution-order.md](./operator-testnet-manual-execution-order.md)

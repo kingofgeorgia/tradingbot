@@ -24,12 +24,10 @@
 
 ### High Impact / Medium Effort
 
-- `LATER-06` Добавить manual review queue для unresolved startup/runtime issues.
-- `LATER-07` Добавить graceful degradation mode при частичной недоступности exchange API.
+- В этой секции оставляем только реально открытые `Later`-идеи. Закрытые `LATER-06` и `LATER-07` уже подняты и закрыты как `NOW-19` и `NOW-20`.
 
 ### Medium Impact / Medium Effort
 
-- `LATER-02` Сделать отдельный backtesting harness для strategy layer без смешивания с runtime execution кодом.
 - `LATER-04` Поддержать несколько стратегий через явный strategy registry, если появится второй реальный strategy flow.
 
 ### Medium Impact / Higher Effort
@@ -38,6 +36,24 @@
 - `LATER-05` Добавить richer analytics по сделкам, recovery incidents и blocked-symbol history.
 
 ## Now
+
+Следующий кандидатский `Now`-набор из оставшихся `Later` стоит запускать после фактического evidence по `NEXT-15..17`, чтобы не отрывать product-direction от реального operator pain. Предлагаемый набор:
+
+- `NOW-22` Поддержать несколько стратегий через явный strategy registry, если появится второй реальный strategy flow.
+	owner: copilot
+	status: todo
+	target: after manual evidence from `NEXT-15..17`
+	note: это единственный оставшийся чисто engineering-first кандидат без внешней зависимости на UI/storage migration.
+- `NOW-23` Вынести operator/status слой в небольшой локальный dashboard или TUI, если CLI станет узким местом.
+	owner: user
+	status: todo
+	target: after operator feedback from `NEXT-15..17`
+	note: поднимать только если ручной прогон подтвердит, что CLI/runbook-ориентированный flow уже тесен.
+- `NOW-24` Добавить richer analytics по сделкам, recovery incidents и blocked-symbol history.
+	owner: user
+	status: todo
+	target: after artifact review from `NEXT-17`
+	note: лучше основывать на реальных CSV/log pain points, а не на абстрактном reporting wishlist.
 
 - `NOW-19` Добавить manual review queue для unresolved startup/runtime issues.
 	owner: copilot
@@ -172,28 +188,29 @@
 
 ## Later
 
-Открытых кандидатов в текущем `Now`-слое больше нет: `LATER-06`, `LATER-07`, `LATER-02` были подняты и закрыты как `NOW-19..21` на `2026-03-20`.
+Открытых кандидатов в предыдущем `Now`-слое больше нет: `LATER-06`, `LATER-07`, `LATER-02` были подняты и закрыты как `NOW-19..21` на `2026-03-20`. Следующий кандидатский набор вынесен выше в `NOW-22..24`, а в `Later` остаются только идеи, которые пока не стоит трогать до ручного operator evidence.
 
 - `LATER-01` Добавить SQLite/Postgres event store, если CSV-журналов перестанет хватать для аудита и аналитики.
 	owner: user
 	status: todo
 	target: 2026-05-01
+	note: не поднимать до завершения `NEXT-17`; сначала нужно увидеть реальные пределы CSV/log artifacts.
 - `LATER-02` Сделать отдельный backtesting harness для strategy layer без смешивания с runtime execution кодом.
 	owner: copilot
 	status: done-via-now
 	target: completed as `NOW-21` on 2026-03-20
 - `LATER-03` Вынести operator/status слой в небольшой локальный dashboard или TUI, если CLI станет узким местом.
 	owner: user
-	status: todo
-	target: 2026-05-20
+	status: candidate-for-now
+	target: candidate `NOW-23` after `NEXT-15..17`
 - `LATER-04` Поддержать несколько стратегий через явный strategy registry, если появится второй реальный strategy flow.
 	owner: copilot
-	status: todo
-	target: 2026-06-01
+	status: candidate-for-now
+	target: candidate `NOW-22` after `NEXT-15..17`
 - `LATER-05` Добавить richer analytics по сделкам, recovery incidents и blocked-symbol history.
 	owner: user
-	status: todo
-	target: 2026-06-10
+	status: candidate-for-now
+	target: candidate `NOW-24` after `NEXT-17`
 - `LATER-06` Добавить manual review queue для unresolved startup/runtime issues.
 	owner: copilot
 	status: promoted-to-now
